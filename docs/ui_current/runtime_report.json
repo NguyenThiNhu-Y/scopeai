@@ -1,0 +1,557 @@
+{
+  "pages": [
+    {
+      "name": "01_create",
+      "url": "http://127.0.0.1:3000/",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "Tạo hồ sơ mới",
+        "Thông tin hồ sơ",
+        "Nội dung yêu cầu *",
+        "Tài liệu đính kèm (0/10)",
+        "Bộ hồ sơ RFP mẫu",
+        "Sau khi bấm Phân tích"
+      ],
+      "interactive_without_name": 5,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "02_bids",
+      "url": "http://127.0.0.1:3000/bids",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "Danh sách hồ sơ"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "03_overview",
+      "url": "http://127.0.0.1:3000/bids/110?tab=overview",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Mục tiêu của khách",
+        "Hướng giải pháp",
+        "Khả thi",
+        "Rủi ro lớn nhất",
+        "Effort & kế hoạch",
+        "Báo giá sơ bộ",
+        "Đáp ứng yêu cầu",
+        "Câu hỏi cần khách xác nhận",
+        "【DỮ LIỆU GIẢ LẬP — 架空のサンプルデータ (BR-06)】",
+        "依頼概要",
+        "本文（メール）",
+        "予算と予定（RFP別紙）"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "04_requirements",
+      "url": "http://127.0.0.1:3000/bids/110?tab=requirements",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Kết quả phân tích yêu cầu",
+        "File đính kèm",
+        "Đọc và xác nhận dữ liệu",
+        "【DỮ LIỆU GIẢ LẬP — 架空のサンプルデータ (BR-06)】",
+        "依頼概要",
+        "本文（メール）",
+        "予算と予定（RFP別紙）",
+        "Trao đổi Q&A",
+        "Email gửi khách"
+      ],
+      "interactive_without_name": 2,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "05_solution",
+      "url": "http://127.0.0.1:3000/bids/110?tab=solution",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "06_plan",
+      "url": "http://127.0.0.1:3000/bids/110?tab=plan",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Nhân sự, effort và lịch",
+        "Cấu trúc công việc"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "07_coverage",
+      "url": "http://127.0.0.1:3000/bids/110?tab=coverage",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Chưa có bảng đáp ứng"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "08_proposal",
+      "url": "http://127.0.0.1:3000/bids/110?tab=proposal",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "09_approval",
+      "url": "http://127.0.0.1:3000/bids/110?tab=approval",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Duyệt kỹ thuật",
+        "Duyệt giá",
+        "Lịch sử & phiên bản"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "10_settings",
+      "url": "http://127.0.0.1:3000/settings",
+      "viewport": "1440x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "Cài đặt",
+        "Bảng effort"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "01_create",
+      "url": "http://127.0.0.1:3000/",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "Tạo hồ sơ mới",
+        "Thông tin hồ sơ",
+        "Nội dung yêu cầu *",
+        "Tài liệu đính kèm (0/10)",
+        "Bộ hồ sơ RFP mẫu",
+        "Sau khi bấm Phân tích"
+      ],
+      "interactive_without_name": 5,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "02_bids",
+      "url": "http://127.0.0.1:3000/bids",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "Danh sách hồ sơ"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "03_overview",
+      "url": "http://127.0.0.1:3000/bids/110?tab=overview",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Mục tiêu của khách",
+        "Hướng giải pháp",
+        "Khả thi",
+        "Rủi ro lớn nhất",
+        "Effort & kế hoạch",
+        "Báo giá sơ bộ",
+        "Đáp ứng yêu cầu",
+        "Câu hỏi cần khách xác nhận",
+        "【DỮ LIỆU GIẢ LẬP — 架空のサンプルデータ (BR-06)】",
+        "依頼概要",
+        "本文（メール）",
+        "予算と予定（RFP別紙）"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "04_requirements",
+      "url": "http://127.0.0.1:3000/bids/110?tab=requirements",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Kết quả phân tích yêu cầu",
+        "File đính kèm",
+        "Đọc và xác nhận dữ liệu",
+        "【DỮ LIỆU GIẢ LẬP — 架空のサンプルデータ (BR-06)】",
+        "依頼概要",
+        "本文（メール）",
+        "予算と予定（RFP別紙）",
+        "Trao đổi Q&A",
+        "Email gửi khách"
+      ],
+      "interactive_without_name": 2,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "05_solution",
+      "url": "http://127.0.0.1:3000/bids/110?tab=solution",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "06_plan",
+      "url": "http://127.0.0.1:3000/bids/110?tab=plan",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Nhân sự, effort và lịch",
+        "Cấu trúc công việc"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "07_coverage",
+      "url": "http://127.0.0.1:3000/bids/110?tab=coverage",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Chưa có bảng đáp ứng"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "08_proposal",
+      "url": "http://127.0.0.1:3000/bids/110?tab=proposal",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "09_approval",
+      "url": "http://127.0.0.1:3000/bids/110?tab=approval",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "顧客管理システム（CRM）構築支援（サンプル・架空）",
+        "Duyệt kỹ thuật",
+        "Duyệt giá",
+        "Lịch sử & phiên bản"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    },
+    {
+      "name": "10_settings",
+      "url": "http://127.0.0.1:3000/settings",
+      "viewport": "1280x900",
+      "title": "Trợ lý dự thầu",
+      "headings": [
+        "Cài đặt",
+        "Bảng effort"
+      ],
+      "interactive_without_name": 0,
+      "tables_without_thead": 0
+    }
+  ],
+  "console": [
+    {
+      "viewport": "1440x900",
+      "type": "error",
+      "text": "TypeError: Cannot read properties of undefined (reading 'split')\n    at http://127.0.0.1:3000/assets/index-BeA8-9mv.js:69:8\n    at Array.map (<anonymous>)\n    at http://127.0.0.1:3000/assets/index-BeA8-9mv.js:67:100729\n    at Object.sp [as useMemo] (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:38:21374)\n    at q.useMemo (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:9:6193)\n    at Ob (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:67:100544)\n    at wu (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:38:16997)\n    at co (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:40:3139)\n    at Op (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:40:44705)\n    at Tp (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:40:39703)"
+    },
+    {
+      "viewport": "1280x900",
+      "type": "error",
+      "text": "TypeError: Cannot read properties of undefined (reading 'split')\n    at http://127.0.0.1:3000/assets/index-BeA8-9mv.js:69:8\n    at Array.map (<anonymous>)\n    at http://127.0.0.1:3000/assets/index-BeA8-9mv.js:67:100729\n    at Object.sp [as useMemo] (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:38:21374)\n    at q.useMemo (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:9:6193)\n    at Ob (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:67:100544)\n    at wu (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:38:16997)\n    at co (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:40:3139)\n    at Op (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:40:44705)\n    at Tp (http://127.0.0.1:3000/assets/index-BeA8-9mv.js:40:39703)"
+    }
+  ],
+  "failed_requests": [],
+  "expected_state_conflicts": [
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/wbs",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1440x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/wbs",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/effort",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/schedule",
+      "status": 409
+    },
+    {
+      "viewport": "1280x900",
+      "url": "http://127.0.0.1:3000/api/bids/110/quotation",
+      "status": 409
+    }
+  ],
+  "accessibility": []
+}

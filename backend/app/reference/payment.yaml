@@ -1,0 +1,14 @@
+# payment.yaml — Mốc thanh toán mặc định cho master schedule (FR-034)
+#
+# DỮ LIỆU GIẢ LẬP — do BA/PM phê duyệt cho milestone M4.
+# Tổng percent ≤ 100 (code validate). due_offset_days tính từ start_date (ngày lịch).
+version: 1
+metadata:
+  label: "DỮ LIỆU GIẢ LẬP"
+  approval: "BA/PM fixture approval (M4)"
+  source: "reference/payment.yaml"
+milestones:
+  - {name: "Kickoff", percent: 20, due_offset_days: 0}
+  - {name: "Hoàn thành PoC", percent: 20, due_offset_days: 30}
+  - {name: "Hoàn thành MVP", percent: 30, due_offset_days: 60}
+  - {name: "Bàn giao production", percent: 30, due_offset_days: 90}

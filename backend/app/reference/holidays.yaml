@@ -1,0 +1,38 @@
+# holidays.yaml — Ngày nghỉ lễ VN + Nhật 2026 (cấu hình được — FR-060 ở M8)
+#
+# DỮ LIỆU GIẢ LẬP — do BA/PM phê duyệt cho milestone M4.
+# Nguồn: lịch nghỉ lễ công bố của Việt Nam và Nhật Bản năm 2026.
+# Cuối tuần (T7/CN) luôn nghỉ do code xử lý; file này chỉ liệt kê ngày nghỉ lễ.
+version: 1
+metadata:
+  label: "DỮ LIỆU GIẢ LẬP"
+  approval: "BA/PM fixture approval (M4)"
+  source: "reference/holidays.yaml"
+vn:
+  - "2026-01-01"      # Tết Dương lịch
+  - "2026-02-16"      # Tết Nguyên đán (giả lập lịch nghỉ chính thức)
+  - "2026-02-17"      # Tết Nguyên đán — Mùng 1
+  - "2026-02-18"      # Tết Nguyên đán — Mùng 2
+  - "2026-04-25"      # Giỗ Tổ Hùng Vương (10/3 âm lịch)
+  - "2026-04-30"      # Ngày Giải phóng miền Nam
+  - "2026-05-01"      # Ngày Quốc tế Lao động
+  - "2026-09-02"      # Ngày Quốc khánh
+jp:
+  - "2026-01-01"      # 元日 (New Year's Day)
+  - "2026-01-12"      # 成人の日 (Coming of Age Day)
+  - "2026-02-11"      # 建国記念の日 (National Foundation Day)
+  - "2026-02-23"      # 天皇誕生日 (Emperor's Birthday)
+  - "2026-03-20"      # 春分の日 (Vernal Equinox Day)
+  - "2026-04-29"      # 昭和の日 (Showa Day)
+  - "2026-05-03"      # 憲法記念日 (Constitution Memorial Day)
+  - "2026-05-04"      # みどりの日 (Greenery Day)
+  - "2026-05-05"      # こどもの日 (Children's Day)
+  - "2026-05-06"      # 振替休日 (Substitute Holiday)
+  - "2026-07-20"      # 海の日 (Marine Day)
+  - "2026-08-11"      # 山の日 (Mountain Day)
+  - "2026-09-21"      # 敬老の日 (Respect for the Aged Day)
+  - "2026-09-22"      # 秋分の日 (Autumnal Equinox Day)
+  - "2026-09-23"      # 国民の休日 (Citizen's Holiday)
+  - "2026-10-12"      # スポーツの日 (Sports Day)
+  - "2026-11-03"      # 文化の日 (Culture Day)
+  - "2026-11-23"      # 勤労感謝の日 (Labor Thanksgiving Day)

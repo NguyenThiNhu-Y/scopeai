@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+sqlalchemy>=2.0
+pydantic>=2
+httpx
+pytest
+pytest-asyncio
+pytest-timeout
+pyyaml
+python-multipart
+python-docx
+openpyxl
+pypdf>=5
+reportlab

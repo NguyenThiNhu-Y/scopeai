@@ -1,0 +1,3 @@
+customer_id,email,phone,status
+C-001,tanaka@example.invalid,03-0000-0000,active
+C-002,nguyen@example.invalid,0900000000,inactive

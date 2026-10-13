@@ -1,0 +1,14 @@
+version: 1
+factor_cap: 2.0
+factors:
+  on_premise: {value: 1.25, reason: "Triển khai on-premise"}
+  customer_jp: {value: 1.2, reason: "Khách Nhật"}
+  data_not_ready: {value: 1.3, reason: "Dữ liệu chưa sẵn sàng"}
+  strict_compliance: {value: 1.25, reason: "Yêu cầu tuân thủ chặt"}
+  multilingual: {value: 1.15, reason: "Đa ngôn ngữ"}
+  ocr: {value: 1.2, reason: "Có yêu cầu OCR"}
+  large_data: {value: 1.3, reason: "Dữ liệu lớn"}
+  many_requirements: {value: 1.15, reason: "Nhiều requirement"}
+thresholds:
+  many_requirements: 30
+  large_data: 1000000

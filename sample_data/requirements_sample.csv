@@ -1,0 +1,6 @@
+code,content,priority,category
+REQ-001,Quản lý hồ sơ khách hàng,mandatory,functional
+REQ-002,Hỗ trợ tìm kiếm và lọc dữ liệu,should,functional
+REQ-003,Có thể xuất báo cáo doanh thu,should,reporting
+REQ-004,Phân quyền người dùng theo vai trò,mandatory,security
+REQ-005,Nhật ký thao tác phải được lưu,should,audit

@@ -1,0 +1,10 @@
+[project]
+name = "presales-bidding-assistant"
+version = "0.1.0"
+description = "Backend — Presales Bidding Assistant (M1 Foundation)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+timeout = 60

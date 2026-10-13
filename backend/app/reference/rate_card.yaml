@@ -1,0 +1,25 @@
+# DỮ LIỆU GIẢ LẬP — phải được BA/PM xác nhận trước khi dùng thực tế.
+version: 1
+currency: VND
+effective_from: "2026-10-01"
+rates:
+  pm: {offshore: 2500000, onsite: 4000000}
+  ba: {offshore: 2200000, onsite: 3500000}
+  brse: {offshore: 2800000, onsite: 4500000}
+  ai_engineer: {offshore: 3200000, onsite: 5000000}
+  backend: {offshore: 2500000, onsite: 4000000}
+  frontend: {offshore: 2300000, onsite: 3800000}
+  qa: {offshore: 1800000, onsite: 3000000}
+  infra: {offshore: 2600000, onsite: 4200000}
+overhead: {pm: 0.10, brse: 0.05}
+onsite_percent: 0.10
+contingency: {fixed_price: 0.20, lab_type: 0.0, hybrid: 0.10}
+operating_cost: 0
+tax_percent: 10
+fx:
+  - {pair: VND/VND, value: 1.0, date: "2026-10-01"}
+  - {pair: VND/JPY, value: 0.0065, date: "2026-10-01"}
+  - {pair: VND/USD, value: 0.00004, date: "2026-10-01"}
+rounding: {unit: 1000, mode: half_up}
+rounding_by_currency: {VND: 1000, JPY: 1, USD: 0.01}
+validity_days: 30

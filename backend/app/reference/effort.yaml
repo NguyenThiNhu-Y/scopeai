@@ -1,0 +1,27 @@
+version: 5
+metadata:
+  label: "DỮ LIỆU GIẢ LẬP — doanh nghiệp quy mô vừa, team offshore Việt Nam"
+  approval: "BA/PM fixture approval"
+  source: "reference/effort.yaml"
+rounding_digits: 1
+directions:
+  none:
+    poc: {min: 20, max: 35}
+    mvp: {min: 80, max: 120}
+    production: {min: 35, max: 60}
+  traditional_ml:
+    poc: {min: 35, max: 55}
+    mvp: {min: 180, max: 260}
+    production: {min: 75, max: 120}
+  rag:
+    poc: {min: 40, max: 60}
+    mvp: {min: 150, max: 220}
+    production: {min: 60, max: 100}
+  agent:
+    poc: {min: 45, max: 70}
+    mvp: {min: 220, max: 320}
+    production: {min: 90, max: 150}
+  fine_tune:
+    poc: {min: 50, max: 80}
+    mvp: {min: 240, max: 360}
+    production: {min: 100, max: 170}
