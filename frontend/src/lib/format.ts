@@ -1,4 +1,4 @@
-import type { CustomerLanguage, WbsPhase, WbsRole, WorkingCalendar } from '../api/types';
+import type { CustomerLanguage, SignalStatus, WbsPhase, WbsRole, WorkingCalendar } from '../api/types';
 
 /** Nhãn tiếng Việt cho ngôn ngữ khách (BR-07). */
 export const LANGUAGE_LABELS: Record<CustomerLanguage, string> = {
@@ -84,4 +84,40 @@ export function formatManDay(value: number | null | undefined): string {
   return new Intl.NumberFormat('vi-VN', {
     maximumFractionDigits: 1,
   }).format(Math.round((value + Number.EPSILON) * 10) / 10);
+}
+
+// ---------------------------------------------------------------------------
+// Đợt 13 — Độ tin cậy ước lượng (thiet_ke_danh_gia.md §7)
+// ---------------------------------------------------------------------------
+
+/** Nhãn thị trường case study (không hiện mã thô jp/vn/other). */
+export const MARKET_LABELS: Record<string, string> = {
+  jp: 'Nhật Bản',
+  vn: 'Việt Nam',
+  other: 'Khác',
+};
+
+export interface SignalStatusMeta {
+  /** Nhãn tiếng Việt — không hiện mã thô pass/warn/fail/na. */
+  label: string;
+  /** Biểu tượng hiển thị cạnh tín hiệu. */
+  icon: string;
+  /** Tone màu để render (pass=xanh, warn=vàng, fail=đỏ, na=xám). */
+  tone: 'pass' | 'warn' | 'fail' | 'na';
+}
+
+/** Bảng nhãn/biểu tượng cho 4 trạng thái tín hiệu độ tin cậy (§5.2, §7). */
+export const SIGNAL_STATUS_META: Record<SignalStatus, SignalStatusMeta> = {
+  pass: { label: 'Đạt', icon: '✓', tone: 'pass' },
+  warn: { label: 'Cảnh báo', icon: '⚠', tone: 'warn' },
+  fail: { label: 'Lỗi', icon: '✕', tone: 'fail' },
+  na: { label: 'Không có dữ liệu', icon: '–', tone: 'na' },
+};
+
+/**
+ * Map trạng thái tín hiệu → nhãn/biểu tượng/tone (hàm thuần, có test).
+ * Giá trị lạ fallback về "Không có dữ liệu" để không hiện mã thô.
+ */
+export function signalStatusMeta(status: string): SignalStatusMeta {
+  return SIGNAL_STATUS_META[status as SignalStatus] ?? SIGNAL_STATUS_META.na;
 }

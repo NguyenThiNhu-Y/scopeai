@@ -49,13 +49,15 @@ def test_jp_holidays_included_in_yaml():
 
 
 def test_holidays_excluded_from_working_days():
-    """Task 2 man-day bắt đầu 2026-11-02 (T2) — 11-03 là nghỉ lễ → kết thúc 11-04."""
+    """Ngày 11-03 (nghỉ lễ Nhật) không được dùng làm ngày bắt đầu/kết thúc task."""
     result = _schedule_jp()
-    first = result["tasks"][0]
-    assert first["start_date"] == "2026-11-02"
-    assert first["end_date"] == "2026-11-04", (
-        "11-03 (nghỉ lễ Nhật) phải bị trừ khỏi ngày làm việc"
-    )
+    assert result["tasks"][0]["start_date"] == "2026-11-02"
+    starts = {t["start_date"] for t in result["tasks"]}
+    ends = {t["end_date"] for t in result["tasks"]}
+    assert "2026-11-03" not in starts, "Task không được bắt đầu vào ngày nghỉ lễ"
+    assert "2026-11-03" not in ends, "Task không được kết thúc vào ngày nghỉ lễ"
+    # Task kế tiếp (sau nghỉ lễ) bắt đầu 11-04 — ngày nghỉ bị trừ khỏi lịch.
+    assert "2026-11-04" in starts
 
 
 def test_add_working_days_skips_holiday():

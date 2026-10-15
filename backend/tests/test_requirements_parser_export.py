@@ -37,6 +37,58 @@ def test_excel_reader_finds_header_on_row_three_and_aliases():
     assert rows[0]["source_row"] == 4
 
 
+def test_tokai_real_requirements_are_41_with_customer_codes():
+    """Đợt 14 (B1/B2): tệp Tokai thật → đúng 41 requirement, giữ mã khách.
+
+    Sheet bìa 表紙 (không có cột mã) bị bỏ; cột 要件ID thắng cột No. khi
+    tìm cột mã; mã khách làm internal_code để truy vết và xuất bảng đáp ứng.
+    """
+    from pathlib import Path
+
+    real_dir = Path(__file__).resolve().parents[2] / "sample_data" / "rfp_tokai_minato" / "real"
+    xlsx = next(real_dir.glob("*.xlsx"))
+    sheets = read_sheets(xlsx.read_bytes(), xlsx.name)
+    rows = normalize(sheets)
+
+    assert len(rows) == 41
+    assert {r["source_sheet"] for r in rows} == {"機能要件", "非機能要件"}
+    assert [r["internal_code"] for r in rows[:3]] == ["FR-QA-001", "FR-QA-002", "FR-QA-003"]
+    functional = [r for r in rows if r["source_sheet"] == "機能要件"]
+    non_functional = [r for r in rows if r["source_sheet"] == "非機能要件"]
+    assert len(functional) == 25
+    assert len(non_functional) == 16
+    assert all(r["internal_code"].startswith("FR-") for r in functional)
+    assert all(r["internal_code"].startswith("NFR-") for r in non_functional)
+    assert len({r["internal_code"] for r in rows}) == 41
+
+
+def test_normalize_skips_cover_sheet_without_code_column():
+    """Sheet bìa có nội dung nhưng không có cột mã → bị bỏ khi file có sheet
+    khác có cột mã; nếu cả file không có cột mã thì vẫn parse (REQ-xxx)."""
+    sheets = {
+        "表紙": [{"column_1": "記入方法", "column_2": "黄色の列に記入"}],
+        "要件": [{"要件ID": "FR-001", "要件内容": "ログインできる"}],
+    }
+    rows = normalize(sheets)
+    assert len(rows) == 1
+    assert rows[0]["internal_code"] == "FR-001"
+    assert rows[0]["source_sheet"] == "要件"
+
+    # Cả file không có cột mã → fallback REQ-xxx, không bỏ sheet.
+    rows = normalize({"A": [{"内容": "Yêu cầu A"}], "B": [{"内容": "Yêu cầu B"}]})
+    assert len(rows) == 2
+    assert all(r["internal_code"].startswith("REQ-") for r in rows)
+
+
+def test_code_column_prefers_exact_match_over_no_column():
+    """Cột 'No.' (số thứ tự) không được thắng cột '要件ID' khi tìm cột mã."""
+    sheets = {
+        "要件": [{"No.": "1", "要件ID": "FR-QA-001", "要件内容": "質問応答"}],
+    }
+    rows = normalize(sheets)
+    assert rows[0]["internal_code"] == "FR-QA-001"
+
+
 def test_requirement_export_writes_response_and_note_without_overwriting_remark(tmp_path):
     source = tmp_path / "customer.xlsx"
     workbook = Workbook()

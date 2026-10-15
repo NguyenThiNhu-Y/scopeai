@@ -12,11 +12,13 @@ import asyncio
 import math
 from datetime import date, timedelta
 
+from sqlalchemy import select
+
 from app.core import db
 from app.llm import complete_with_retry
 from app.llm.gateway import LLMSchemaError
 from app.llm.prompts.b5_wbs import build_wbs_prompt
-from app.models import Bid
+from app.models import Bid, Requirement
 from app.pipeline.steps.common import (
     get_step,
     mark_failed,
@@ -62,7 +64,24 @@ async def run_wbs(bid_id: int, client) -> dict:
         choice = current_choice(session, bid_id)
         if choice is None:
             raise RuntimeError("Chưa chọn hướng giải pháp — không thể tạo WBS")
-        effort = calculate_effort(bid, choice.direction)
+        # Truyền session để factor many_requirements được tính — WBS phải dùng
+        # CÙNG midpoint với effort engine (Đợt 14 C1).
+        effort = calculate_effort(bid, choice.direction, session)
+
+        # Danh sách requirement gọn cho prompt B5 (thiet_ke_danh_gia.md §4):
+        # mã + 80 ký tự đầu + nhóm, tối đa 150 dòng. requirements_data dành cho
+        # mock/kiểm tra (cấu trúc đầy đủ), không đưa vào prompt.
+        requirements = list(
+            session.scalars(
+                select(Requirement)
+                .where(Requirement.bid_id == bid_id)
+                .order_by(Requirement.id)
+            )
+        )
+        requirement_lines = [
+            f"{r.internal_code} | {r.content.replace(chr(10), ' ')[:80]} | {r.category or ''}"
+            for r in requirements
+        ]
         context = {
             "bid_id": bid_id,
             "direction": choice.direction,
@@ -70,6 +89,15 @@ async def run_wbs(bid_id: int, client) -> dict:
             "by_phase": effort["by_phase"],
             "midpoint_total": effort["midpoint_total"],
             "customer_language": bid.customer_language,
+            "requirements": requirement_lines[:150],
+            "requirements_data": [
+                {
+                    "req_code": r.internal_code,
+                    "content": r.content,
+                    "category": r.category or "",
+                }
+                for r in requirements
+            ],
         }
         prompt = build_wbs_prompt(context)
 
@@ -78,6 +106,21 @@ async def run_wbs(bid_id: int, client) -> dict:
         )
         # Chuẩn hóa enum → giá trị plain (str/int) trước khi đưa vào engine.
         result = WbsStructure.model_validate(result).model_dump(mode="json")
+
+        # Bỏ mã requirement không tồn tại (LLM có thể bịa mã) — ghi vào notes.
+        existing_codes = {r.internal_code for r in requirements}
+        dropped_codes: list[str] = []
+        for task in result["tasks"]:
+            codes = [str(code) for code in (task.get("requirement_codes") or [])]
+            kept = [code for code in codes if code in existing_codes]
+            if len(kept) != len(codes):
+                dropped_codes.extend(sorted(set(codes) - set(kept)))
+                task["requirement_codes"] = kept
+        if dropped_codes:
+            result.setdefault("notes_vi", []).append(
+                "Đã bỏ mã requirement không tồn tại: "
+                + ", ".join(sorted(set(dropped_codes)))
+            )
 
         warning: str | None = None
         tasks: list[dict] = []

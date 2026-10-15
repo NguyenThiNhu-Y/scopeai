@@ -33,11 +33,13 @@ def test_add_leaf_recalcs_total_and_schedule_without_llm(client):
     llm = MockLLMClient()
     calls_before = llm.call_count
 
+    # Đợt 14 (C2): mock WBS nghiêng về backend (nút thắt lịch) — thêm task
+    # BACKEND 5 man-day để end_date thực sự trễ hơn (task QA có dư năng lực).
     resp = _put_wbs(client, bid_id, [
         {"op": "add", "task": {
             "task_code": "WBS-002-01-05", "name_vi": "Task thêm 5 man-day",
             "phase": "mvp", "parent_code": "WBS-002-01",
-            "role": "qa", "man_day": 5.0, "depends_on": []}},
+            "role": "backend", "man_day": 5.0, "depends_on": []}},
     ])
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -114,7 +116,9 @@ def test_override_outside_20pct_requires_note(client):
     ])
     assert resp.status_code == 200, resp.text
     body = resp.json()
-    assert body["check"]["leaf_within_limit"] is False
+    # Đợt 14 (C2): mock WBS đã tách task để mọi lá ≤ 10 man-day — thêm task
+    # 10.0 man-day không còn làm lá vượt ngưỡng (trước đây fixture cũ có lá 20+).
+    assert body["check"]["leaf_within_limit"] is True
 
     # Có note → chấp nhận (override BR-12).
     resp = _put_wbs(client, bid_id, [

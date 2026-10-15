@@ -1,0 +1,17 @@
+# DỮ LIỆU GIẢ LẬP — golden case quản lý kho tiếng Việt (tách từ docs/eval/golden_cases.yaml).
+
+id: gc_inventory_vi
+title: Quản lý kho — bộ hồ sơ mẫu tiếng Việt
+input:
+  sample_key: vi_email
+answers:
+  default: Đúng như mô tả, không có yêu cầu thêm.
+expected:
+  acceptable_directions: [none]
+  total_man_day: [160, 200]
+  phase_man_day:
+    poc: [20, 30]
+    mvp: [95, 120]
+    production: [40, 55]
+  duration_weeks: [18, 24]
+  max_question_rounds: 1

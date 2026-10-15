@@ -1,17 +1,27 @@
 """WbsEngine — dựng cây WBS 3 cấp và gán man-day cho task lá (BR-01, ADR-006).
 
 LLM chỉ đề xuất cấu trúc + trọng số; man-day do CODE tính:
-    man_day(lá) = round(target_phase × weight_i / Σweight_phase, 1)
-với target_phase = midpoint(dải effort sau hệ số). Cân bằng sai số làm tròn
-vào lá lớn nhất để tổng phase khớp target. Nhóm/task cha = Σ con (tính khi trả
-response). Engines KHÔNG import gateway LLM (spec §3.2).
+    man_day(lá) = round_half_day(target_phase × weight_i / Σweight_phase)
+với target_phase = midpoint(dải effort sau hệ số). Man-day làm tròn về bội số
+0.5 (nửa ngày) — khớp step=0.5 của bảng WBS trên UI, tránh số lẻ như 6.9/7.3.
+Cân bằng sai số làm tròn vào lá lớn nhất để tổng phase khớp target. Nhóm/task
+cha = Σ con (tính khi trả response). Engines KHÔNG import gateway LLM (spec §3.2).
 """
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 
 PHASES = ["poc", "mvp", "production"]
+
+
+def _round_half_day(value: float) -> float:
+    """Làm tròn về bội số 0.5 (nửa ngày), nửa trên làm tròn lên.
+
+    Ví dụ: 6.9 → 7.0, 7.3 → 7.5, 7.25 → 7.5, 7.24 → 7.0.
+    """
+    return math.floor(value * 2 + 0.5) / 2
 
 
 def assign_man_days(tasks: list[dict], by_phase: dict[str, dict]) -> list[dict]:
@@ -34,19 +44,31 @@ def assign_man_days(tasks: list[dict], by_phase: dict[str, dict]) -> list[dict]:
         total_weight = sum(int(t.get("weight") or 0) for t in leaves)
         if total_weight <= 0:
             # Phòng thủ: chia đều (không nên xảy ra vì schema bắt weight trên lá).
-            share = round(target / len(leaves), 1)
+            share = _round_half_day(target / len(leaves))
             for t in leaves:
                 t["man_day"] = share
             continue
 
         raw = [target * int(t.get("weight") or 0) / total_weight for t in leaves]
-        rounded = [round(v, 1) for v in raw]
+        # Chặn dưới 0.5: lá có share > 0 không được ra 0 man-day (task vô nghĩa).
+        rounded = [max(_round_half_day(v), 0.5) for v in raw]
         diff = round(target - sum(rounded), 1)
         if diff != 0:
-            # Cân bằng sai số làm tròn vào lá lớn nhất (theo weight).
-            idx = max(range(len(leaves)), key=lambda i: int(leaves[i].get("weight") or 0))
-            adjusted = round(rounded[idx] + diff, 1)
-            rounded[idx] = max(adjusted, 0.0)
+            # Cân bằng sai số làm tròn: phân phối diff qua các lá theo weight
+            # giảm dần (nhiều lá, không chỉ 1), không cho lá xuống dưới 0.5.
+            order = sorted(
+                range(len(leaves)),
+                key=lambda i: int(leaves[i].get("weight") or 0),
+                reverse=True,
+            )
+            for idx in order:
+                if diff == 0:
+                    break
+                cand = max(_round_half_day(rounded[idx] + diff), 0.5)
+                delta = round(cand - rounded[idx], 1)
+                if delta != 0:
+                    rounded[idx] = cand
+                    diff = round(diff - delta, 1)
         for task, md in zip(leaves, rounded):
             task["man_day"] = md
     return tasks
@@ -76,7 +98,7 @@ def enrich_items(tasks: list[dict]) -> list[dict]:
         kids = children.get(code, [])
         if not kids:
             return 0.0
-        return round(sum(man_day_of(k) for k in kids), 1)
+        return _round_half_day(sum(man_day_of(k) for k in kids))
 
     out: list[dict] = []
     for t in tasks:
@@ -92,6 +114,7 @@ def enrich_items(tasks: list[dict]) -> list[dict]:
             "weight": t.get("weight"),
             "man_day": float(t["man_day"]) if t.get("man_day") is not None else None,
             "depends_on": list(t.get("depends_on") or []),
+            "requirement_codes": list(t.get("requirement_codes") or []),
             "sort_order": int(t.get("sort_order") or 0),
             "is_leaf": leaf,
         }

@@ -19,14 +19,14 @@ export default function Sidebar() {
     setDark(document.documentElement.classList.contains('dark'));
   }
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-[var(--line)] bg-[var(--surface)] max-md:w-20">
+    <aside className="flex h-full w-64 shrink-0 flex-col overflow-y-auto border-r border-[var(--line)] bg-[var(--surface)] max-md:w-20">
       <div className="flex items-center gap-3 border-b border-[var(--line)] px-6 py-5">
          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--brand)] text-sm font-bold text-white">
            ✦
         </span>
         <div className="max-md:hidden">
-           <p className="text-sm font-semibold text-[var(--ink)]">Trợ lý dự thầu</p>
-           <p className="text-xs text-[var(--muted)]">Workspace nội bộ</p>
+<p className="text-sm font-semibold text-[var(--ink)]">BidPilot</p>
+            <p className="text-xs text-[var(--muted)]">Trợ lý AI lập hồ sơ dự thầu</p>
         </div>
       </div>
 

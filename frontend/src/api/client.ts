@@ -43,6 +43,11 @@ import type {
   DealStage,
   ProposalVersion,
   ProposalSections,
+  ConfidenceOut,
+  ApprovalsResponse,
+  CaseStudyImportPreview,
+  CaseStudyImportSave,
+  EvalReport,
 } from './types';
 
 /**
@@ -105,6 +110,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 function filenameFromDisposition(value: string | null, fallback: string): string {
   if (!value) return fallback;
+  const utf8 = value.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8?.[1]) {
+    try {
+      return decodeURIComponent(utf8[1]);
+    } catch { /* fall back to the ASCII name */ }
+  }
   const match = value.match(/filename="?([^";]+)"?/i);
   return match?.[1] ? decodeURIComponent(match[1]) : fallback;
 }
@@ -124,6 +135,7 @@ export async function downloadExport(id: number, kind: ExportKind): Promise<Expo
     docx: `/bids/${id}/exports/proposal.docx`,
     xlsx: `/bids/${id}/exports/estimate.xlsx`,
     pdf: `/bids/${id}/exports/proposal.pdf`,
+    pptx: `/bids/${id}/exports/proposal.pptx`,
     bundle: `/bids/${id}/exports/bundle.zip`,
     requirements: `/bids/${id}/exports/requirements.xlsx`,
   };
@@ -221,6 +233,57 @@ export function getBid(id: number): Promise<BidDetail> {
 
 export function getBidQualification(id: number): Promise<BidQualification> {
   return request<BidQualification>(`/bids/${id}/bid-qualification`);
+}
+
+/** GET /api/bids/{id}/confidence — độ tin cậy ước lượng (thiet_ke_danh_gia.md §5.1). */
+export function getConfidence(id: number): Promise<ConfidenceOut> {
+  return request<ConfidenceOut>(`/bids/${id}/confidence`);
+}
+
+// ---------------------------------------------------------------------------
+// Đợt 13 — C/D/E: duyệt kỹ thuật, case study, đánh giá hệ thống
+// ---------------------------------------------------------------------------
+
+/** GET /api/bids/{id}/approvals — bản ghi duyệt kèm snapshot độ tin cậy (§5.5). */
+export function getApprovals(id: number): Promise<ApprovalsResponse> {
+  return request<ApprovalsResponse>(`/bids/${id}/approvals`);
+}
+
+/** GET /api/settings/case_studies/template — tải file Excel mẫu nhập case study (§3.3). */
+export async function downloadCaseStudiesTemplate(): Promise<ExportDownload> {
+  const response = await fetch(`${API_BASE}/settings/case_studies/template`);
+  if (!response.ok) {
+    let message = `Lỗi máy chủ (HTTP ${response.status})`;
+    try {
+      const body = (await response.json()) as ApiErrorEnvelope;
+      message = body.error?.message ?? message;
+    } catch { /* body lỗi không phải JSON */ }
+    throw new ApiError(message, response.status);
+  }
+  return {
+    blob: await response.blob(),
+    filename: filenameFromDisposition(response.headers.get('Content-Disposition'), 'case_studies_template.xlsx'),
+    jaCheck: null,
+  };
+}
+
+/** POST /api/settings/case_studies/import — preview (lỗi theo dòng) hoặc save (§3.3). */
+export function importCaseStudies(
+  file: File,
+  mode: 'preview' | 'save',
+): Promise<CaseStudyImportPreview | CaseStudyImportSave> {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('mode', mode);
+  return request<CaseStudyImportPreview | CaseStudyImportSave>('/settings/case_studies/import', {
+    method: 'POST',
+    body: form,
+  });
+}
+
+/** GET /api/eval/reports/latest — báo cáo đánh giá hệ thống mới nhất (§6.4). 404 khi chưa có. */
+export function getEvalReportLatest(): Promise<EvalReport> {
+  return request<EvalReport>('/eval/reports/latest');
 }
 
 export function updateBidQualification(id: number, data: Pick<BidQualification, 'criteria' | 'decision' | 'confirmer'>): Promise<BidQualification> {

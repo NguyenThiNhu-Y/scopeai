@@ -54,34 +54,84 @@ def _find_milestone(text: str, keywords: tuple[str, ...]) -> date | None:
     return None
 
 
+def _find_poc_end(text: str) -> date | None:
+    """Tìm ngày kết thúc PoC từ khoảng thời gian "PoC … 2026年12月〜2027年2月".
+
+    RFP Tokai: "Phase 1：PoC |2026年12月〜2027年2月（3か月）" — mốc kết thúc là
+    NGÀY CUỐI của tháng sau dấu 〜 trong câu có chứa PoC (kỳ kết thúc cuối tháng).
+    """
+    import calendar
+
+    for sentence in re.split(r"[。\n；;]", text):
+        if "PoC" not in sentence:
+            continue
+        match = re.search(r"(\d{4})年\s*(\d{1,2})月\s*〜\s*(\d{4})年\s*(\d{1,2})月", sentence)
+        if match:
+            year, month = int(match.group(3)), int(match.group(4))
+            if 1 <= month <= 12:
+                return date(year, month, calendar.monthrange(year, month)[1])
+    return None
+
+
+def _is_open_ended(text: str, milestone: date) -> bool:
+    """True nếu mốc là phase mở (vd "2027年10月〜") — không có ngày kết thúc."""
+    needle = f"{milestone.year}年{milestone.month}月"
+    for sentence in re.split(r"[。\n；;]", text):
+        pos = sentence.find(needle)
+        if pos < 0:
+            continue
+        tail = sentence[pos + len(needle):]
+        if re.match(r"\s*[〜～]|以降|から", tail):
+            return True
+    return False
+
+
 def _apply_customer_constraints(bid: Bid, text: str) -> None:
     """Persist explicit RFP budget and milestones; never delegate numbers to LLM."""
     budget = re.search(r"1,500万円|1500万円", text)
     if budget:
         bid.budget_amount = 15_000_000
         bid.budget_currency = "JPY"
+        # Phạm vi ngân sách: nếu câu ngân sách nói rõ PoC (vd "PoC：1,500万円…以内")
+        # → chỉ đối chiếu giá PoC, không dùng tổng dự án.
 
-    # Mốc khách: bắt đầu / MVP / Production (RFP Nhật: 2027/1, 2027/6, 2027/9).
+        sentence_start = max(text.rfind("。", 0, budget.start()) + 1, text.rfind("\n", 0, budget.start()) + 1)
+        sentence_end = len(text)
+        for idx in (text.find("。", budget.end()), text.find("\n", budget.end())):
+            if idx >= 0:
+                sentence_end = min(sentence_end, idx)
+        if "PoC" in text[sentence_start:sentence_end]:
+            bid.budget_scope = "poc"
+
+    # Mốc khách: bắt đầu / PoC kết thúc / MVP / Production (RFP Nhật: 2027/1,  ​2027/6,  ​2027/9).
     start = _find_milestone(text, ("着手", "開始", "スタート", "起動"))
+    poc_end = _find_poc_end(text)
     mvp = _find_milestone(text, ("MVP",))
     production = _find_milestone(text, ("本番", "production", "正式稼働"))
     if start:
         bid.customer_schedule_start = start
+    if poc_end:
+        bid.customer_poc_end = poc_end
     if mvp:
         bid.customer_mvp_start = mvp
     if production:
         bid.customer_production_start = production
-        bid.customer_schedule_end = production
+        # Phase mở (vd "2027年10月〜") không có ngày kết thúc — không gán end.
+
+        if not _is_open_ended(text, production):
+            bid.customer_schedule_end = production
     else:
-        # Fallback: tháng lớn nhất xuất hiện trong văn bản.
-        months = [
-            (int(year or 2027), int(month))
-            for year, month in re.findall(r"(?:(20\d{2})年)?\s*(\d{1,2})月", text)
-            if 1 <= int(month) <= 12
-        ]
-        if months:
-            year, month = max(months)
-            bid.customer_schedule_end = date(year, month, 1)
+        # Fallback: tháng lớn nhất xuất hiện trong văn bản — chỉ khi chưa có
+        # mốc kết thúc (không ghi đè mốc khách đã biết, ví dụ bộ Tokai).
+        if bid.customer_schedule_end is None:
+            months = [
+                (int(year or 2027), int(month))
+                for year, month in re.findall(r"(?:(20\d{2})年)?\s*(\d{1,2})月", text)
+                if 1 <= int(month) <= 12
+            ]
+            if months:
+                year, month = max(months)
+                bid.customer_schedule_end = date(year, month, 1)
 
 
 async def run_intake(bid_id: int, client) -> dict:

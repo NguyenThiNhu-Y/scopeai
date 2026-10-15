@@ -1,6 +1,19 @@
 from app.core import db
 from app.models import Bid
+from app.pipeline.steps.b6_proposal import _build_proposal_prompt
 from tests.helpers import setup_wbs_bid
+
+
+def test_proposal_prompt_lists_fixed_english_keys():
+    prompt = _build_proposal_prompt({"customer_language": "ja"}, "ja")
+    for key in (
+        "introduction", "requirements_understanding", "solution_overview",
+        "approach", "schedule", "team", "assumptions_and_scope", "risks",
+    ):
+        assert f'"{key}"' in prompt
+    # Khóa JSON cố định tiếng Anh, chỉ giá trị dịch — chống tái phát lỗi LLM dịch khóa.
+    assert "KHÔNG được dịch" in prompt
+    assert "{{QUOTATION}}" in prompt
 
 
 def test_proposal_draft_persists_edit_without_llm(client):

@@ -38,6 +38,10 @@ class WbsTaskItem(BaseModel):
     role: WbsRole | None = None
     weight: int | None = Field(default=None, ge=1, le=100)
     depends_on: list[str] = Field(default_factory=list, max_length=5)
+    # Truy vết requirement (thiet_ke_danh_gia.md §4): chỉ trên task lá, tối đa 8
+    # mã. Đây là PHÂN LOẠI (mã requirement), không phải con số — BR-01 không bị
+    # vi phạm (test_llm_schema_no_numbers vẫn pass).
+    requirement_codes: list[str] = Field(default_factory=list, max_length=8)
 
 
 class WbsStructure(BaseModel):
@@ -92,6 +96,19 @@ class WbsStructure(BaseModel):
             else:
                 if t.role is not None or t.weight is not None:
                     raise ValueError(f"Task nhóm '{t.task_code}' không được có role/weight")
+                if t.requirement_codes:
+                    raise ValueError(
+                        f"Task nhóm '{t.task_code}' không được có requirement_codes "
+                        "(chỉ task lá được truy vết requirement)"
+                    )
+
+            for code in t.requirement_codes:
+                if not code.strip():
+                    raise ValueError(f"Task lá '{t.task_code}' có mã requirement rỗng")
+                if len(code) > 30:
+                    raise ValueError(
+                        f"Task lá '{t.task_code}' có mã requirement quá dài ('{code}')"
+                    )
 
             for dep in t.depends_on:
                 if dep == t.task_code:

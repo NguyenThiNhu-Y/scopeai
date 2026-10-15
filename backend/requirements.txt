@@ -10,6 +10,7 @@ pytest-timeout
 pyyaml
 python-multipart
 python-docx
+python-pptx
 openpyxl
 pypdf>=5
 reportlab

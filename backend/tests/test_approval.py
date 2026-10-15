@@ -15,7 +15,8 @@ def _set_status(bid_id, status):
 def test_approval_roles_transitions_and_separation_of_duties(client):
     bid_id = setup_wbs_bid(client, db.SessionLocal())
     _set_status(bid_id, "waiting_tech_approval")
-    tech = client.post(f"/api/bids/{bid_id}/approvals/tech", json={"decision": "approved"}, headers={"X-Actor": "developer"})
+    # Mức độ tin cậy Thấp (WBS leaf_within_limit fail) → cần nhận xét ≥ 10 ký tự (§5.5).
+    tech = client.post(f"/api/bids/{bid_id}/approvals/tech", json={"decision": "approved", "comment": "Đã rà soát WBS và chấp nhận rủi ro về phân bổ."}, headers={"X-Actor": "developer"})
     assert tech.status_code == 200
     price = client.post(f"/api/bids/{bid_id}/approvals/price", json={"decision": "approved"}, headers={"X-Actor": "Nhu"})
     assert price.status_code == 200

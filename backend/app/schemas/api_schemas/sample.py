@@ -10,4 +10,4 @@ from pydantic import BaseModel
 class SampleIn(BaseModel):
     """Body ``POST /api/bids/sample`` — thiếu ``sample_key`` → mặc định ``ja_email``."""
 
-    sample_key: Literal["ja_email", "vi_email"] | None = None
+    sample_key: Literal["ja_email", "vi_email", "tokai_minato"] | None = None

@@ -1,0 +1,150 @@
+# DỮ LIỆU GIẢ LẬP — thư viện case study cho tính năng "So với dự án tương tự" và bộ đánh giá offline.
+# Không phải dự án hay công ty thật. Upload thành docs/eval/case_studies_gia_lap.yaml.
+# Số liệu được đặt cho hợp lý với bảng chuẩn effort.yaml (v5) và factors.yaml (v1) của project.
+
+- id: cs_none_crm_jp
+  title: Hệ thống CRM cho công ty thương mại Nhật (giả lập)
+  industry: Thương mại
+  market: jp
+  customer_language: ja
+  direction: none
+  requirement_count: 34
+  factors: [customer_jp, many_requirements]
+  year: 2025
+  public: true
+  summary: Thay quản lý khách hàng bằng Excel bằng CRM web; tích hợp kế toán qua CSV; giao diện tiếng Nhật.
+  estimated_man_day: {poc: 30, mvp: 138, production: 60}
+  actual_man_day: {poc: 31, mvp: 142, production: 62}
+  actual_duration_weeks: {poc: 4, go_no_go: 2, mvp: 14, production: 7}
+  team_peak: {pm: 1, ba: 1, brse: 1, backend: 2, frontend: 2, qa: 1, infra: 1}
+  lessons_vi:
+    - Khách yêu cầu nhập dữ liệu cũ từ nhiều file Excel khác định dạng, tốn thêm khoảng 6 man-day.
+    - Phân quyền theo phòng ban cần chốt sớm ở PoC.
+
+- id: cs_none_inventory_vn
+  title: Quản lý kho cho doanh nghiệp sản xuất Việt Nam (giả lập)
+  industry: Sản xuất
+  market: vn
+  customer_language: vi
+  direction: none
+  requirement_count: 22
+  factors: []
+  year: 2024
+  public: true
+  summary: Quản lý nhập xuất tồn theo thời gian thực, cảnh báo tồn thấp, tích hợp phần mềm kế toán.
+  estimated_man_day: {poc: 25, mvp: 100, production: 45}
+  actual_man_day: {poc: 24, mvp: 108, production: 50}
+  actual_duration_weeks: {poc: 3, go_no_go: 1, mvp: 11, production: 6}
+  team_peak: {pm: 1, ba: 1, backend: 2, frontend: 1, qa: 1, infra: 1}
+  lessons_vi:
+    - API phần mềm kế toán thiếu tài liệu, tích hợp chiếm khoảng 20% effort MVP.
+
+- id: cs_none_booking_jp
+  title: Hệ thống đặt lịch bảo trì thiết bị cho khách Nhật (giả lập)
+  industry: Dịch vụ kỹ thuật
+  market: jp
+  customer_language: ja
+  direction: none
+  requirement_count: 41
+  factors: [customer_jp, many_requirements]
+  year: 2025
+  public: false
+  summary: Đặt lịch, điều phối kỹ thuật viên, thông báo qua email; nhiều yêu cầu báo cáo theo mẫu khách.
+  estimated_man_day: {poc: 30, mvp: 135, production: 62}
+  actual_man_day: {poc: 35, mvp: 160, production: 71}
+  actual_duration_weeks: {poc: 4, go_no_go: 2, mvp: 16, production: 8}
+  team_peak: {pm: 1, ba: 1, brse: 1, backend: 3, frontend: 2, qa: 2, infra: 1}
+  lessons_vi:
+    - Báo cáo theo mẫu Excel của khách bị đánh giá thấp lúc ước lượng; nên tách task riêng.
+
+- id: cs_rag_manual_jp
+  title: Tra cứu manual thiết bị on-premise cho nhà sản xuất Nhật (giả lập)
+  industry: Sản xuất
+  market: jp
+  customer_language: ja
+  direction: rag
+  requirement_count: 28
+  factors: [customer_jp, on_premise, ocr]
+  year: 2025
+  public: true
+  summary: Hỏi đáp tiếng Nhật trên khoảng 2.000 trang manual PDF, trả lời kèm số trang; triển khai on-premise.
+  estimated_man_day: {poc: 80, mvp: 300, production: 140}
+  actual_man_day: {poc: 88, mvp: 330, production: 150}
+  actual_duration_weeks: {poc: 8, go_no_go: 3, mvp: 20, production: 10}
+  team_peak: {pm: 1, ba: 1, brse: 1, ai_engineer: 2, backend: 2, frontend: 1, qa: 1, infra: 1}
+  lessons_vi:
+    - Khoảng 30% PDF là bản scan, OCR và làm sạch dữ liệu chiếm nhiều effort hơn dự kiến.
+    - Bộ câu hỏi đánh giá do khách soạn cần có từ PoC.
+
+- id: cs_rag_regulation_vn
+  title: Hỏi đáp quy định nội bộ cho ngân hàng Việt Nam (giả lập)
+  industry: Tài chính ngân hàng
+  market: vn
+  customer_language: vi
+  direction: rag
+  requirement_count: 25
+  factors: [strict_compliance]
+  year: 2025
+  public: true
+  summary: Hỏi đáp trên kho văn bản quy định, phân quyền theo phòng ban, lưu vết câu hỏi phục vụ kiểm toán.
+  estimated_man_day: {poc: 55, mvp: 225, production: 100}
+  actual_man_day: {poc: 60, mvp: 240, production: 105}
+  actual_duration_weeks: {poc: 6, go_no_go: 2, mvp: 16, production: 8}
+  team_peak: {pm: 1, ba: 1, ai_engineer: 2, backend: 2, frontend: 1, qa: 1, infra: 1}
+  lessons_vi:
+    - Yêu cầu lưu vết và phân quyền theo văn bản làm tăng effort backend.
+
+- id: cs_rag_maintenance_jp_vn
+  title: Trợ lý tri thức bảo trì song ngữ Nhật–Việt cho nhà máy (giả lập)
+  industry: Sản xuất
+  market: jp
+  customer_language: ja
+  direction: rag
+  requirement_count: 32
+  factors: [customer_jp, multilingual, ocr, many_requirements]
+  year: 2026
+  public: true
+  summary: Hỏi đáp tiếng Nhật và tiếng Việt trên manual, tiêu chuẩn bảo trì và lịch sử sự cố; triển khai trên cloud của khách, đăng nhập một lần.
+  estimated_man_day: {poc: 65, mvp: 270, production: 115}
+  actual_man_day: {poc: 70, mvp: 290, production: 125}
+  actual_duration_weeks: {poc: 12, go_no_go: 3, mvp: 18, production: 9}
+  team_peak: {pm: 1, ba: 1, brse: 1, ai_engineer: 3, backend: 2, frontend: 1, qa: 2, infra: 1}
+  lessons_vi:
+    - Lịch sử sự cố trộn tiếng Nhật và tiếng Việt, cần bước chuẩn hóa thuật ngữ.
+    - PoC giới hạn một nhóm thiết bị giúp đo được hiệu quả trước khi mở rộng.
+
+- id: cs_agent_order_jp
+  title: Agent xử lý email đặt hàng cho công ty phân phối Nhật (giả lập)
+  industry: Phân phối
+  market: jp
+  customer_language: ja
+  direction: agent
+  requirement_count: 30
+  factors: [customer_jp, many_requirements]
+  year: 2024
+  public: true
+  summary: Agent đọc email và PDF đặt hàng, kiểm tồn kho, tạo đơn nháp trong ERP chờ người duyệt.
+  estimated_man_day: {poc: 58, mvp: 280, production: 130}
+  actual_man_day: {poc: 62, mvp: 300, production: 140}
+  actual_duration_weeks: {poc: 6, go_no_go: 2, mvp: 20, production: 10}
+  team_peak: {pm: 1, ba: 1, brse: 1, ai_engineer: 2, backend: 3, frontend: 1, qa: 2, infra: 1}
+  lessons_vi:
+    - ERP cũ chỉ có API SOAP, tích hợp chiếm khoảng 40% effort MVP.
+
+- id: cs_ml_forecast_vn
+  title: Dự báo nhu cầu nhập hàng cho chuỗi bán lẻ Việt Nam (giả lập)
+  industry: Bán lẻ
+  market: vn
+  customer_language: vi
+  direction: traditional_ml
+  requirement_count: 18
+  factors: [data_not_ready]
+  year: 2025
+  public: false
+  summary: Dự báo nhu cầu theo cửa hàng và mặt hàng, đề xuất số lượng nhập; dữ liệu bán hàng phân tán nhiều hệ thống.
+  estimated_man_day: {poc: 50, mvp: 250, production: 110}
+  actual_man_day: {poc: 60, mvp: 285, production: 120}
+  actual_duration_weeks: {poc: 8, go_no_go: 2, mvp: 18, production: 8}
+  team_peak: {pm: 1, ba: 1, ai_engineer: 2, backend: 2, frontend: 1, qa: 1, infra: 1}
+  lessons_vi:
+    - Làm sạch và gộp dữ liệu bán hàng chiếm gần một nửa effort PoC.

@@ -8,6 +8,72 @@ from app.pipeline.steps.common import get_step_output
 from app.schemas.llm_schemas.proposal import ProposalOutput
 from app.pipeline.steps.common import utcnow, publish_step, publish_error
 
+# Tên mục proposal theo ngôn ngữ khách — chỉ là gợi ý nội dung (GIÁ TRỊ);
+# KHÓA JSON của "sections" luôn là khóa tiếng Anh cố định (xem _build_proposal_prompt).
+_SECTION_TITLES: dict[str, dict[str, str]] = {
+    "vi": {
+        "introduction": "Giới thiệu",
+        "requirements_understanding": "Hiểu yêu cầu",
+        "solution_overview": "Tổng quan giải pháp",
+        "approach": "Cách triển khai",
+        "schedule": "Lịch trình",
+        "team": "Đội ngũ",
+        "assumptions_and_scope": "Giả định và phạm vi ngoài",
+        "risks": "Rủi ro",
+    },
+    "en": {
+        "introduction": "Introduction",
+        "requirements_understanding": "Requirements understanding",
+        "solution_overview": "Solution overview",
+        "approach": "Approach",
+        "schedule": "Schedule",
+        "team": "Team",
+        "assumptions_and_scope": "Assumptions and out-of-scope",
+        "risks": "Risks",
+    },
+    "ja": {
+        "introduction": "はじめに",
+        "requirements_understanding": "ご要件の理解",
+        "solution_overview": "提案概要",
+        "approach": "進め方",
+        "schedule": "スケジュール",
+        "team": "体制",
+        "assumptions_and_scope": "前提条件・対象外",
+        "risks": "リスク",
+    },
+}
+
+_PROPOSAL_SECTION_ORDER = (
+    "introduction",
+    "requirements_understanding",
+    "solution_overview",
+    "approach",
+    "schedule",
+    "team",
+    "assumptions_and_scope",
+    "risks",
+)
+
+
+def _build_proposal_prompt(context: dict, customer_language: str) -> str:
+    """Dựng prompt B6 — KHÓA "sections" cố định bằng tiếng Anh, chỉ GIÁ TRỊ
+    viết theo ngôn ngữ khách (tránh LLM dịch luôn khóa JSON → sai schema)."""
+    lang = customer_language or "vi"
+    titles = _SECTION_TITLES.get(lang, _SECTION_TITLES["vi"])
+    section_lines = "\n".join(
+        f'{i}. "{key}" — {titles[key]}'
+        for i, key in enumerate(_PROPOSAL_SECTION_ORDER, start=1)
+    )
+    return f"""Viết proposal theo ngôn ngữ khách {lang}, dựa trên context JSON dưới đây.
+Trả về JSON đúng schema ProposalOutput. KHÓA (key) của đối tượng "sections" là CỐ ĐỊNH bằng tiếng Anh, KHÔNG được dịch sang ngôn ngữ khác; chỉ GIÁ TRỊ (value) viết bằng ngôn ngữ khách.
+"sections" phải có đủ đúng 8 khóa sau (theo thứ tự):
+{section_lines}
+Ví dụ đúng:
+{{"sections": {{"introduction": "…", "requirements_understanding": "…", "solution_overview": "…", "approach": "…", "schedule": "…", "team": "…", "assumptions_and_scope": "…", "risks": "…"}}}}
+Không đưa số tiền, man-day hoặc ngày cụ thể; phần giá phải đúng một dòng {{{{QUOTATION}}}} (token chính xác 2 cặp ngoặc nhọn).
+Các mục có thể nằm trong sections, assumptions_phrased và scope_out_phrased theo schema.
+Context:\n{json.dumps(context, ensure_ascii=False, indent=2)}"""
+
 
 def _render_customer_facts(sections: dict[str, str], bid, requirements, solution, schedule) -> dict[str, str]:
     """Replace code-owned facts after LLM validation; the LLM never invents them."""
@@ -60,11 +126,7 @@ async def run_proposal(bid_id: int, client: LLMClient) -> None:
             "schedule_by_phase": _schedule_summary(schedule),
             "requirement_coverage": {"total": len(requirements), "evaluated": session.query(Evaluation).filter_by(bid_id=bid_id).count(), "sample": [{"req_code": r.internal_code, "content": r.content} for r in requirements[:40]]},
         }
-        prompt = f"""Viết proposal theo ngôn ngữ khách {bid.customer_language}, dựa trên context JSON dưới đây.
-Đủ đúng 8 mục, theo thứ tự: はじめに, ご要件の理解, 提案概要, 進め方, スケジュール, 体制, 前提条件・対象外, リスク.
-Không đưa số tiền, man-day hoặc ngày cụ thể; phần giá phải đúng một dòng {{QUOTATION}}.
-Các mục có thể nằm trong sections, assumptions_phrased và scope_out_phrased theo schema.
-Context:\n{json.dumps(context, ensure_ascii=False, indent=2)}"""
+        prompt = _build_proposal_prompt(context, bid.customer_language)
         try:
             result = complete_with_retry(client, ProposalOutput, prompt, context, max_retries=2)
         except LLMSchemaError as exc:

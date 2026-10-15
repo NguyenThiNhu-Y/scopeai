@@ -1,4 +1,4 @@
-# Presales Bidding Assistant
+# BidPilot — Trợ lý AI lập hồ sơ dự thầu
 
 Web app hỗ trợ presales làm hồ sơ dự thầu: phân tích yêu cầu khách, hỏi làm rõ, chọn hướng giải pháp, tính effort bằng code, dựng WBS + lịch, báo giá, soạn proposal và xuất bộ hồ sơ. **Milestone hiện tại: M7 — xuất Word/Excel/PDF hoặc ZIP bằng code** (báo giá do code tính từ rate card giả lập; artifact giữ price gate; frontend gọi API root-relative).
 

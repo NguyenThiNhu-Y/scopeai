@@ -5,7 +5,9 @@ import {
   ApiError,
   approvePrice,
   approveTech,
+  getApprovals,
   getBid,
+  getConfidence,
   getEffort,
   getEvaluations,
   getHistory,
@@ -22,7 +24,7 @@ import {
 } from '../api/client';
 import { BID_STATUS, type DealStage } from '../api/types';
 import BidStatusBadge from '../components/BidStatusBadge';
-import { formatAmount, formatDate, CONTRACT_MODEL_LABELS } from '../lib/format';
+import { formatAmount, formatDate, CONTRACT_MODEL_LABELS, signalStatusMeta } from '../lib/format';
 
 const SOLUTION_LABELS: Record<string, string> = {
   none: 'Không dùng AI',
@@ -80,6 +82,9 @@ export default function ApprovalsPage() {
   const history = useQuery({ queryKey: ['history', id], queryFn: () => getHistory({ bid_id: id }), enabled: Number.isFinite(id), retry: false });
   const qualification = useQuery({ queryKey: ['bid-qualification', id], queryFn: () => getBidQualification(id), enabled: Number.isFinite(id), retry: false });
   const versions = useQuery({ queryKey: ['proposal-versions', id], queryFn: () => listProposalVersions(id), enabled: Number.isFinite(id), retry: false });
+  // Đợt 13 — C: độ tin cậy (đủ tín hiệu khi duyệt) + bản ghi duyệt (snapshot lúc duyệt, §5.5).
+  const confidence = useQuery({ queryKey: ['confidence', id], queryFn: () => getConfidence(id), enabled: advanced, retry: false });
+  const approvals = useQuery({ queryKey: ['approvals', id], queryFn: () => getApprovals(id), enabled: Number.isFinite(id), retry: false });
   const [stage, setStage] = useState<DealStage | ''>('');
   const [confirmer, setConfirmer] = useState('');
   const [decision, setDecision] = useState<'bid' | 'no-bid'>('bid');
@@ -124,6 +129,12 @@ export default function ApprovalsPage() {
   const bidHistory = history.data?.items ?? [];
   const techApprovalEvent = bidHistory.find((item) => item.action === 'approve_tech');
   const priceApprovalEvent = bidHistory.find((item) => item.action === 'approve_price');
+  // Đợt 13 — C: bản ghi duyệt kỹ thuật đã duyệt → hiện mức độ tin cậy lúc duyệt (§5.5).
+  const techApprovalRecord = approvals.data?.items.find(
+    (item) => item.kind === 'tech' && item.status === 'approved',
+  );
+  const confidenceLow = confidence.data?.level === 'low';
+  const techCommentTooShort = confidenceLow && techComment.trim().length < 10;
 
   if (bid.isPending) return <Message text="Đang tải trạng thái duyệt…" />;
   if (bid.isError || !bid.data) return <Message text={bid.error instanceof ApiError ? bid.error.message : 'Không tải được hồ sơ.'} error />;
@@ -179,12 +190,52 @@ export default function ApprovalsPage() {
           <Summary label="Câu hỏi còn mở" value={questions.isError ? 'Không tải được' : openQuestions} />
         </dl>
         {effort.isPending || evaluations.isPending || schedule.isPending || questions.isPending ? <p role="status" className="mt-4 text-sm text-slate-500">Đang tải tóm tắt kỹ thuật…</p> : null}
+        {confidence.data && (
+          <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/60 p-4" aria-label="Độ tin cậy ước lượng">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-800">
+                Độ tin cậy ước lượng: <span className="text-blue-700">{confidence.data.level_label_vi}</span>
+              </p>
+              <span className="text-xs text-slate-500">
+                Ngưỡng v{confidence.data.thresholds_version} · Case study v{confidence.data.case_studies_version}
+              </span>
+            </div>
+            <ul className="mt-3 space-y-2">
+              {confidence.data.signals.map((signal) => {
+                const meta = signalStatusMeta(signal.status);
+                const tones = {
+                  pass: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+                  warn: 'border-amber-200 bg-amber-50 text-amber-800',
+                  fail: 'border-red-200 bg-red-50 text-red-800',
+                  na: 'border-slate-200 bg-slate-100 text-slate-600',
+                } as const;
+                return (
+                  <li key={signal.key} className="flex items-start gap-2 text-sm">
+                    <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${tones[meta.tone]}`} aria-hidden="true">
+                      {meta.icon}
+                    </span>
+                    <span className="font-medium text-slate-800">{signal.label_vi}</span>
+                    <span className="text-slate-600">{signal.detail_vi}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+        {confidenceLow && <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Độ tin cậy ở mức Thấp — cần nhận xét tối thiểu 10 ký tự để duyệt kỹ thuật.</p>}
         {techApprovalEvent && <p className="mt-4 text-xs text-slate-500">Đã duyệt bởi {techApprovalEvent.actor} · {formatDate(techApprovalEvent.created_at)}</p>}
+        {techApprovalRecord?.snapshot?.confidence && (
+          <p className="mt-2 text-xs text-slate-500">
+            Đã duyệt khi mức độ tin cậy: {techApprovalRecord.snapshot.confidence.level_label_vi}
+            {techApprovalRecord.snapshot.case_studies_version != null && ` · Case study v${techApprovalRecord.snapshot.case_studies_version}`}
+            {techApprovalRecord.snapshot.confidence_thresholds_version != null && ` · Ngưỡng v${techApprovalRecord.snapshot.confidence_thresholds_version}`}
+          </p>
+        )}
         <label className="mt-5 block text-sm font-medium text-slate-800">Nhận xét kỹ thuật
           <textarea value={techComment} onChange={(event) => setTechComment(event.target.value)} rows={3} className="mt-2 w-full rounded-lg border border-slate-300 p-3 font-normal outline-none focus:border-blue-500" placeholder="Nêu điều kiện duyệt hoặc nội dung cần sửa" />
         </label>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button type="button" disabled={!techPending || techBusy || bid.data.locked} onClick={() => techMutation.mutate()} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{techMutation.isPending ? 'Đang duyệt…' : 'Duyệt kỹ thuật'}</button>
+          <button type="button" disabled={!techPending || techBusy || bid.data.locked || techCommentTooShort} onClick={() => techMutation.mutate()} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{techMutation.isPending ? 'Đang duyệt…' : 'Duyệt kỹ thuật'}</button>
           <button type="button" disabled={!techPending || techBusy || bid.data.locked || !techComment.trim()} onClick={() => techRejectMutation.mutate()} className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-40">{techRejectMutation.isPending ? 'Đang gửi…' : 'Yêu cầu sửa'}</button>
         </div>
         {(techMutation.isError || techRejectMutation.isError) && <div className="mt-4"><ErrorState>{(techMutation.error ?? techRejectMutation.error) instanceof ApiError ? (techMutation.error ?? techRejectMutation.error)?.message ?? 'Không thực hiện được quyết định.' : 'Không thực hiện được quyết định.'}</ErrorState></div>}

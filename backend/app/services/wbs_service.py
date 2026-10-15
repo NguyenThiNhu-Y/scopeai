@@ -30,6 +30,7 @@ ALLOWED_UPDATE_FIELDS = {
     "role",
     "man_day",
     "depends_on",
+    "requirement_codes",
     "sort_order",
 }
 
@@ -58,6 +59,7 @@ def item_to_dict(item: WbsItem) -> dict:
         "weight": item.weight,
         "man_day": item.man_day,
         "depends_on": list(item.depends_on or []),
+        "requirement_codes": list(item.requirement_codes or []),
         "sort_order": item.sort_order,
     }
 
@@ -84,6 +86,7 @@ def persist_wbs_items(
                 role=t.get("role"),
                 weight=t.get("weight"),
                 man_day=t.get("man_day"),
+                requirement_codes=list(t.get("requirement_codes") or []),
                 sort_order=siblings[parent],
                 created_by=by,
             )
@@ -104,7 +107,9 @@ def _effort_for_bid(session: Session, bid: Bid) -> dict:
     choice = current_choice(session, bid.id)
     if choice is None:
         raise state_conflict("Chưa chọn hướng giải pháp để tính WBS")
-    return calculate_effort(bid, choice.direction)
+    # Truyền session để factor many_requirements được tính từ số requirement
+    # thực tế — WBS phải dùng CÙNG hệ số/midpoint với effort engine (Đợt 14 C1).
+    return calculate_effort(bid, choice.direction, session)
 
 
 def build_wbs_out(session: Session, bid: Bid, items: list[WbsItem]) -> dict:
@@ -211,6 +216,20 @@ def _validate_structure(items: list[WbsItem]) -> None:
                 raise validation_error(
                     f"Task nhóm '{item.task_code}' không được có man_day (nhóm = Σ con)"
                 )
+            if item.requirement_codes:
+                raise validation_error(
+                    f"Task nhóm '{item.task_code}' không được có requirement_codes "
+                    "(chỉ task lá được truy vết requirement)"
+                )
+        if item.requirement_codes is not None and len(item.requirement_codes) > 8:
+            raise validation_error(
+                f"Task '{item.task_code}' có quá 8 mã requirement"
+            )
+        for code in item.requirement_codes or []:
+            if not str(code).strip():
+                raise validation_error(
+                    f"Task '{item.task_code}' có mã requirement rỗng"
+                )
         for dep in item.depends_on or []:
             if dep == item.task_code:
                 raise validation_error(f"Task '{item.task_code}' không thể phụ thuộc chính nó")
@@ -264,6 +283,7 @@ def _apply_add(
         role=task.role,
         weight=task.weight,
         man_day=task.man_day,
+        requirement_codes=list(task.requirement_codes or []),
         sort_order=sort_order,
         created_by=by,
     )
@@ -301,6 +321,7 @@ def _apply_update(
     new_role = fields.get("role", item.role)
     new_man_day = fields.get("man_day", item.man_day)
     new_parent = fields.get("parent_code", item.parent_code)
+    new_req_codes = fields.get("requirement_codes", item.requirement_codes)
 
     if leaf and new_role is None:
         raise validation_error(f"Task lá '{task_code}' bắt buộc có role")
@@ -310,6 +331,15 @@ def _apply_update(
         raise validation_error(f"Task '{task_code}' không phải lá — không thể gán man_day")
     if new_man_day is not None and new_man_day < 0:
         raise validation_error("man_day không được âm")
+    if not leaf and new_req_codes:
+        raise validation_error(
+            f"Task '{task_code}' không phải lá — không thể gán requirement_codes"
+        )
+    if new_req_codes is not None and len(new_req_codes) > 8:
+        raise validation_error(f"Task '{task_code}' có quá 8 mã requirement")
+    for code in new_req_codes or []:
+        if not str(code).strip():
+            raise validation_error(f"Task '{task_code}' có mã requirement rỗng")
 
     if new_parent is not None:
         if new_parent == task_code:
@@ -435,6 +465,8 @@ def recalc_schedule(session: Session, bid_id: int) -> dict | None:
         # cập nhật PUT /schedule). Giữ lịch cũ, trả None.
         return None
     bid = session.get(Bid, bid_id)
+    if bid is None:
+        return None
     result = compute_schedule(
         items=enriched,
         start_date=sched.start_date,
@@ -443,6 +475,9 @@ def recalc_schedule(session: Session, bid_id: int) -> dict | None:
         working_calendar=sched.working_calendar,
         payment_milestones=sched.payment_milestones or [],
         holidays=load_holidays(),
+        customer_poc_end=bid.customer_poc_end,
+        customer_mvp_start=bid.customer_mvp_start,
+        customer_production_start=bid.customer_production_start,
     )
     _store_schedule_result(session, sched, result)
     return schedule_to_out(sched)
@@ -464,7 +499,7 @@ def _store_schedule_result(session: Session, sched, result: dict) -> None:
 def _diff_items(old_items: list[dict], new_items: list[dict]) -> dict:
     old_map = {i["task_code"]: i for i in old_items}
     new_map = {i["task_code"]: i for i in new_items}
-    fields = ("name_vi", "phase", "parent_code", "role", "man_day", "depends_on", "sort_order")
+    fields = ("name_vi", "phase", "parent_code", "role", "man_day", "depends_on", "requirement_codes", "sort_order")
     added = sorted(set(new_map) - set(old_map))
     removed = sorted(set(old_map) - set(new_map))
     modified = []

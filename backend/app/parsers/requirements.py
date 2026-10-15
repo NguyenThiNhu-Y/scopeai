@@ -1,6 +1,6 @@
 ALIASES = {
-    "code": ("no", "id", "要件id", "要件ＩＤ", "mã", "ma"),
-    "content": ("要件内容", "内容", "requirement", "description", "nội dung", "機能要件"),
+    "code": ("no", "id", "要件id", "要件ＩＤ", "mã", "ma", "code"),
+    "content": ("要件内容", "内容", "requirement", "description", "nội dung", "機能要件", "content"),
     "name": ("要件名", "requirement name", "tên"),
     "priority": ("優先度", "priority", "ưu tiên"),
 }
@@ -10,17 +10,35 @@ def _find_column(row: dict, kind: str, mapping: dict) -> str | None:
     if mapping.get(kind):
         return mapping[kind]
     aliases = ALIASES[kind]
+    # Ưu tiên khớp CHÍNH XÁC trước (vd cột "要件ID" phải thắng cột "No." dù
+    # alias "no" là chuỗi con của "No.") — Đợt 14, giữ mã requirement của khách.
+    normalized = {str(key).strip().lower(): key for key in row}
+    for alias in aliases:
+        if alias in normalized:
+            return normalized[alias]
     for key in row:
-        normalized = str(key).strip().lower()
-        if normalized in aliases or any(alias in normalized for alias in aliases):
+        normalized_key = str(key).strip().lower()
+        if any(alias in normalized_key for alias in aliases):
             return key
     return None
 
 
 def normalize(sheets: dict[str,list[dict]], mappings: dict[str,dict] | None = None, used_codes: set[str] | None = None) -> list[dict]:
     result=[]
+    # Sheet nào có cột mã requirement (要件ID/ID/No.)? Sheet bìa/hướng dẫn
+    # (vd 表紙) không có cột mã → bỏ khi file có sheet khác có cột mã (Đợt 14).
+    mappings = mappings or {}
+    code_keys: dict[str, str | None] = {}
     for sheet, rows in sheets.items():
-        mapping=(mappings or {}).get(sheet,{})
+        mapping = mappings.get(sheet, {})
+        code_keys[sheet] = _find_column(rows[0], "code", mapping) if rows else None
+    has_code_anywhere = any(code_keys.values())
+    for sheet, rows in sheets.items():
+        if not rows:
+            continue
+        if has_code_anywhere and code_keys[sheet] is None:
+            continue
+        mapping = mappings.get(sheet, {})
         for row_no,row in enumerate(rows,2):
             content_key = _find_column(row, "content", mapping)
             content=str(row.get(content_key,"" ) or "").strip() if content_key else ""

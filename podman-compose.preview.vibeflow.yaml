@@ -14,12 +14,16 @@ services:
     volumes:
       - ./backend:/app
       - ./sample_data:/sample_data:ro
+      - ./docs:/app/docs:ro
     environment:
       # Keep these explicit preview overrides; env_file supplies LLM settings.
       DATABASE_URL: sqlite:////app/data/bidding.db
       APP_ENV: preview
       LOG_LEVEL: INFO
       CORS_ORIGINS: "*"
+      LLM_VERIFY_SSL: "false"
+      # ĐỢT 12: buộc mock để không gọi LLM thật khi kiểm thử (AGENTS.md quy tắc 3).
+      LLM_PROVIDER: mock
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).status==200 else 1)"]
       interval: 5s

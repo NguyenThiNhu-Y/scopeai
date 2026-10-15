@@ -1,3 +1,5 @@
+import math
+
 from app.core import db
 from app.models import Bid, Quotation
 from tests.helpers import setup_wbs_bid
@@ -86,7 +88,32 @@ def test_quotation_includes_phase_man_days_and_budget_percentage(client):
 
     assert body["totals"]["phase_man_days"]
     assert body["budget"]["scope"] == "bid_budget"
+    assert body["budget"]["scope_label_vi"] == "Ngân sách khách"
     assert body["budget"]["difference_percent"] is not None
+
+
+def test_budget_scope_poc_compares_poc_price_and_labels(client):
+    """Ngân sách phạm vi PoC: đối chiếu giá PoC (không dùng tổng dự án),
+    hiển thị "Ngân sách PoC"."""
+    bid_id = setup_wbs_bid(client, db.SessionLocal(), customer_language="ja")
+    session = db.SessionLocal()
+    bid = session.get(Bid, bid_id)
+    bid.display_currency = "JPY"
+    bid.budget_amount = 999999
+    bid.budget_currency = "JPY"
+    bid.budget_scope = "poc"
+    session.commit()
+    session.close()
+
+    body = client.get(f"/api/bids/{bid_id}/quotation").json()
+    budget = body["budget"]
+    poc_price = body["totals"]["by_phase"]["poc"]
+
+    assert budget["scope"] == "poc"
+    assert budget["scope_label_vi"] == "Ngân sách PoC"
+    # Chênh lệch tính theo giá PoC, không phải tổng dự án.
+    assert budget["difference"] == round(poc_price - 999999, 2)
+    assert budget["difference"] != round(body["totals"]["grand_total"] - 999999, 2)
 
 
 def test_budget_warning_and_suggestion_are_bounded(client):
@@ -147,6 +174,9 @@ def test_schedule_exposes_phase_role_work_breakdown(client):
     assert breakdown
     assert set(breakdown) >= {"poc", "mvp", "production"}
     for phase in breakdown.values():
-        assert phase["total"] == sum(
-            value for key, value in phase.items() if key != "total"
+        # Tổng bằng tổng các vai trò (sai số float khi cộng nhiều số thập phân).
+        assert math.isclose(
+            phase["total"],
+            sum(value for key, value in phase.items() if key != "total"),
+            rel_tol=1e-9,
         )

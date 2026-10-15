@@ -33,21 +33,33 @@ def test_csv_detection_distinguishes_fault_history_from_requirements():
 def test_tokai_minato_fixture_set_is_parseable():
     from pathlib import Path
 
-    fixture_dir = Path(__file__).resolve().parents[2] / "sample_data" / "rfp_tokai_minato" / "fixtures"
-    request_text = (fixture_dir / "request_tokai_minato.txt").read_bytes()
+    tokai_dir = Path(__file__).resolve().parents[2] / "sample_data" / "rfp_tokai_minato"
+    real_dir = tokai_dir / "real"
+    request_text = (tokai_dir / "email_yeu_cau_khach.txt").read_bytes()
     assert "設備保全ナレッジAIアシスタント" in extract_text(request_text)
     assert "2026年10月30日" in extract_text(request_text)
-    assert "設備保全" in extract_docx_text((fixture_dir / "RFP_tokai_minato_poc.docx").read_bytes())
-    assert "E-204" in extract_pdf_text((fixture_dir / "MC-850H_manual_excerpt.pdf").read_bytes())
 
-    requirements = read_sheets((fixture_dir / "requirements_tokai_minato.xlsx").read_bytes(), "requirements_tokai_minato.xlsx")
+    rfp_docx = next(real_dir.glob("*.docx"))
+    assert "設備保全" in extract_docx_text(rfp_docx.read_bytes())
+
+    # DOCX đọc cả bảng: dòng bảng nối các ô bằng " | ", giữ thứ tự tài liệu.
+    docx_text = extract_docx_text(rfp_docx.read_bytes())
+    assert "Phase 2：本開発 | 2027年4月〜2027年9月" in docx_text
+    assert "Phase 3：展開・運用 | 2027年10月〜" in docx_text
+
+    manual_pdf = next(real_dir.glob("*.pdf"))
+    assert "MC-850H" in extract_pdf_text(manual_pdf.read_bytes())
+
+    requirements_xlsx = next(real_dir.glob("*.xlsx"))
+    requirements = read_sheets(requirements_xlsx.read_bytes(), requirements_xlsx.name)
     assert {"機能要件", "非機能要件"} <= set(requirements)
     assert any("多言語" in str(row) for rows in requirements.values() for row in rows)
 
-    history = read_sheets((fixture_dir / "fault_history_tokai_minato.csv").read_bytes(), "fault_history_tokai_minato.csv")
+    history_csv = next(real_dir.glob("*.csv"))
+    history = read_sheets(history_csv.read_bytes(), history_csv.name)
     summary = profile(history["CSV"])
-    assert summary["row_count"] == 3
-    assert any(column["name"] == "連絡先" and column["pii_suspected"] for column in summary["columns"])
+    assert summary["row_count"] == 600
+    assert any(column["name"] == "対応者メール" and column["pii_suspected"] for column in summary["columns"])
 
 
 def test_pdf_with_text_layer_is_extracted():

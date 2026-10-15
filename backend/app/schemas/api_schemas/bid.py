@@ -19,8 +19,10 @@ class BidCreate(BaseModel):
     request_content: str = Field(..., min_length=30, description="Nội dung yêu cầu — tối thiểu 30 ký tự")
     budget_amount: float | None = None
     budget_currency: Literal["VND", "JPY", "USD"] | None = None
+    budget_scope: Literal["poc", "total"] | None = None
     customer_schedule_start: date | None = None
     customer_schedule_end: date | None = None
+    customer_poc_end: date | None = None
     customer_mvp_start: date | None = None
     customer_production_start: date | None = None
     display_currency: Literal["VND", "JPY", "USD"] | None = None
@@ -35,6 +37,7 @@ class BidOut(BaseModel):
     submission_deadline: date
     customer_schedule_start: date | None = None
     customer_schedule_end: date | None = None
+    customer_poc_end: date | None = None
     customer_mvp_start: date | None = None
     customer_production_start: date | None = None
     customer_language: str
@@ -42,6 +45,7 @@ class BidOut(BaseModel):
     locked: bool
     budget_amount: float | None
     budget_currency: str | None
+    budget_scope: str | None = None
     created_by: str
     created_at: datetime
     display_currency: str = "VND"

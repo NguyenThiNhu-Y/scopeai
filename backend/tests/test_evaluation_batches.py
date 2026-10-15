@@ -29,6 +29,19 @@ class BatchClient(MockLLMClient):
         return super().complete(schema=schema, prompt=prompt, context=context)
 
 
+class RecordingClient(MockLLMClient):
+    """Ghi lại prompt SAU khi che PII — đúng thứ provider thật nhận được."""
+
+    def __init__(self):
+        super().__init__()
+        self.prompts = []
+
+    def complete(self, *, schema, prompt, context=None):
+        result = super().complete(schema=schema, prompt=prompt, context=context)
+        self.prompts.append(self.last_prompt)
+        return result
+
+
 def test_235_requirements_are_evaluated_in_batches_of_at_most_40(client):
     bid_id = create_bid(client)
     session = db.SessionLocal()
@@ -51,5 +64,44 @@ def test_235_requirements_are_evaluated_in_batches_of_at_most_40(client):
         assert result["total"] == 235
         assert client_llm.call_counts["EvaluationBatch"] == 6
         assert client_llm.batch_sizes == [40, 40, 40, 40, 40, 35]
+    finally:
+        session.close()
+
+
+def test_evaluation_prompt_contains_requirement_codes_and_content(client):
+    """Prompt thật phải chứa mã + nội dung requirement (provider openai_compat
+    chỉ gửi prompt, không gửi context) và PII phải được che (BR-06)."""
+    bid_id = create_bid(client)
+    session = db.SessionLocal()
+    try:
+        session.add(
+            Requirement(
+                bid_id=bid_id,
+                internal_code="REQ-001",
+                content="Hệ thống phải hỗ trợ tra cứu khách hàng, liên hệ qua email support@example.com.",
+                priority="mandatory",
+                category="functional",
+            )
+        )
+        session.add(
+            Requirement(
+                bid_id=bid_id,
+                internal_code="REQ-002",
+                content="Yêu cầu báo cáo theo tháng.",
+                priority="optional",
+                category="non_functional",
+            )
+        )
+        session.commit()
+        llm = RecordingClient()
+        result = evaluate(session, bid_id, direction="rag", client=llm)
+        assert result["total"] == 2
+        assert llm.prompts, "evaluate phải gọi LLM"
+        prompt = llm.prompts[0]
+        assert "REQ-001" in prompt and "REQ-002" in prompt
+        assert "tra cứu khách hàng" in prompt
+        assert "báo cáo theo tháng" in prompt
+        assert "support@example.com" not in prompt
+        assert "[EMAIL]" in prompt
     finally:
         session.close()

@@ -130,6 +130,172 @@ _GAP_GOOD_VI = {
 
 _GAP_NO_QUESTIONS = {"needs_clarification": False, "questions": []}
 
+# ---------------------------------------------------------------- Tokai (Đợt 14 E)
+
+# Dấu hiệu nhận diện bộ mẫu Tokai trong context (request/rfp_files/intake).
+_TOKAI_MARKERS = ("設備保全ナレッジAI", "東海ミナトテック", "バクニン")
+
+
+def _is_tokai_context(context: dict | None) -> bool:
+    """Bộ mẫu Tokai? Nhận diện qua văn bản request/tài liệu hoặc mã requirement.
+
+    EvaluationBatch/WbsStructure không có request/rfp_files trong context —
+    nhận diện qua mã requirement kiểu khách Tokai (FR-QA-xxx / NFR-PF-xxx,
+    ≥ 3 phần). ``requirements`` có thể là list dict (B1/B2) hoặc list chuỗi
+    (B5) — xử lý cả hai.
+    """
+    context = context or {}
+    parts = [
+        str(context.get("request", "")),
+        str(context.get("intake", "")),
+        " ".join(str(item.get("text", "")) for item in context.get("rfp_files", [])),
+    ]
+    if any(marker in " ".join(parts) for marker in _TOKAI_MARKERS):
+        return True
+    for key in ("requirements", "requirements_data"):
+        for item in context.get(key) or []:
+            if not isinstance(item, dict):
+                continue
+            code = str(item.get("req_code", ""))
+            if code.startswith(("FR-", "NFR-")) and len(code.split("-")) >= 3:
+                return True
+    return False
+
+
+_INTAKE_TOKAI = {
+    "objectives_vi": (
+        "Khách hàng (giả lập) muốn xây dựng trợ lý tri thức bảo trì nhà máy: trả lời câu hỏi "
+        "của nhân viên bảo trì dựa trên tài liệu hướng dẫn thiết bị, tiêu chuẩn thao tác và lịch "
+        "sử sự cố; hỗ trợ tìm sự cố tương tự và soạn báo cáo công việc."
+    ),
+    "users_vi": "Nhân viên bảo trì tại 3 nhà máy (豊橋, 刈谷, バクニン), khoảng 230 người dùng.",
+    "data_vi": (
+        "Tài liệu hướng dẫn bảo trì dạng PDF (gồm PDF scan), tiêu chuẩn thao tác, lịch sử sự cố "
+        "dạng CSV; cần OCR tài liệu scan và trả lời song ngữ (đa ngôn ngữ) Nhật–Việt."
+    ),
+    "constraints_vi": [
+        "Triển khai trên Azure Japan East, dữ liệu nằm trong tenant của khách",
+        "Trả lời song ngữ (đa ngôn ngữ) Nhật–Việt",
+        "PoC 3 tháng, sau đó Phase 2 và Phase 3 theo mốc khách",
+        "Tích hợp Microsoft Entra ID và SharePoint Online",
+    ],
+    "budget_mentioned": True,
+    "budget_note_vi": "RFP nêu ngân sách PoC khoảng 15 triệu JPY; cần đối chiếu khi lập báo giá.",
+    "deadline_mentioned": True,
+    "deadline_note_vi": "RFP nêu mốc PoC tháng 12/2026; cần xác nhận mốc nghiệm thu từng giai đoạn.",
+    "customer_schedule_note_vi": "PoC đến 2026/12; Phase 2 dự kiến 2027/4–9; Phase 3 từ 2027/10.",
+    "customer_language_detected": "ja",
+    "summary_vi": (
+        "Khách hàng Nhật Bản (giả lập) cần trợ lý tri thức bảo trì nhà máy: tra cứu tài liệu và "
+        "lịch sử sự cố, trả lời song ngữ Nhật–Việt, chạy trên Azure Japan East."
+    ),
+    "keywords": ["bảo trì nhà máy", "tri thức bảo trì", "OCR", "song ngữ Nhật–Việt", "Azure Japan East"],
+    "notes": ["Cần làm rõ tỉ lệ PDF scan và mục tiêu độ chính xác khi nghiệm thu"],
+}
+
+_GAP_TOKAI_QUESTIONS = [
+    {
+        "question": "対象文書のうちPDFスキャン（手書き注記を含む）の割合はどのくらいですか？",
+        "reason_vi": "Ảnh hưởng trực tiếp tới khối lượng OCR và chất lượng truy hồi",
+        "impact": "effort",
+        "related_req_codes": [],
+    },
+    {
+        "question": "回答精度の目標値と、評価用300問の正解セットの準備状況を教えてください。",
+        "reason_vi": "Quyết định tiêu chí nghiệm thu độ chính xác và phạm vi đánh giá",
+        "impact": "solution",
+        "related_req_codes": [],
+    },
+    {
+        "question": "MAINTE-PROのAPI仕様（作業報告書の登録IF）は確定していますか？",
+        "reason_vi": "Ảnh hưởng tới thiết kế tích hợp và effort",
+        "impact": "effort",
+        "related_req_codes": [],
+    },
+    {
+        "question": "Azure Japan Eastで利用可能なLLMモデルの選定は決まっていますか？",
+        "reason_vi": "Ảnh hưởng tới kiến trúc và chi phí vận hành",
+        "impact": "price",
+        "related_req_codes": [],
+    },
+    {
+        "question": "故障履歴データの個人情報（作業者氏名・メール）の扱いは確認済みですか？",
+        "reason_vi": "Ảnh hưởng tới phương án che dữ liệu và tuân thủ",
+        "impact": "solution",
+        "related_req_codes": [],
+    },
+]
+
+_GAP_TOKAI = {"needs_clarification": True, "questions": _GAP_TOKAI_QUESTIONS}
+
+_SOLUTION_TOKAI = {
+    "direction": "rag",
+    "reason_vi": (
+        "RAG phù hợp vì bài toán là tra cứu tài liệu bảo trì và lịch sử sự cố phi cấu trúc; "
+        "lớp truy hồi cho phép trả lời có căn cứ từ tài liệu được kiểm soát, kèm nguồn tham chiếu "
+        "và hỗ trợ song ngữ Nhật–Việt. Loại agent vì luồng thao tác cần kiểm soát chặt; loại "
+        "fine-tune và ML truyền thống vì chưa có bài toán dự đoán cần huấn luyện riêng."
+    ),
+    "risks_vi": [
+        "Tài liệu PDF scan chất lượng thấp ảnh hưởng độ chính xác truy hồi.",
+        "Tiêu chí nghiệm thu độ chính xác (bộ 300 câu) cần thống nhất trước khi chốt.",
+        "Dữ liệu phải nằm trong Azure tenant của khách (Japan East).",
+        "Quyền truy cập tài liệu theo nhà máy cần được kiểm soát.",
+    ],
+    "architecture_notes_vi": (
+        "Lớp truy hồi trên chỉ mục tài liệu đã OCR; API trả kèm nguồn tham chiếu (tên tài liệu, "
+        "trang); tích hợp Entra ID, SharePoint Online và MAINTE-PRO; triển khai trên Azure Japan East."
+    ),
+    "reliability_vi": "Khá tin cậy khi tài liệu nguồn được OCR và chuẩn hóa, có nguồn tham chiếu.",
+    "assumptions_vi": ["Tài liệu nguồn được cung cấp và phân quyền đúng.", "Bộ 300 câu đánh giá do khách chuẩn bị."],
+    "excluded_directions": ["agent", "fine_tune"],
+    "feasibility": {
+        "technical": "khả thi nếu tài liệu scan được OCR và chuẩn hóa",
+        "delivery": "khả thi trong phạm vi PoC 3 tháng",
+        "operational": "khả thi với phân quyền và giám sát phù hợp",
+    },
+    "risks": [
+        {"type_vi": "OCR", "level": 4, "description_vi": "Tài liệu PDF scan (có ghi chú tay) có thể giảm độ chính xác truy hồi.", "mitigation_vi": "OCR + kiểm tra mẫu, đo tỉ lệ nhận dạng trước khi lập chỉ mục."},
+        {"type_vi": "Nghiệm thu", "level": 4, "description_vi": "Mục tiêu độ chính xác trên bộ 300 câu chưa chốt.", "mitigation_vi": "Chốt tiêu chí và bộ câu hỏi đánh giá ngay từ giai đoạn làm rõ."},
+        {"type_vi": "Dữ liệu", "level": 3, "description_vi": "Dữ liệu phải nằm trong Azure tenant khách (Japan East).", "mitigation_vi": "Xác nhận vùng triển khai và quyền truy cập dữ liệu."},
+        {"type_vi": "Phân quyền", "level": 3, "description_vi": "Tài liệu cần giới hạn theo nhà máy.", "mitigation_vi": "Phân quyền trước khi lập chỉ mục, kiểm tra theo nhà máy."},
+    ],
+    "feasibility_score": {"score": 4, "reason_vi": "Khả thi nếu tài liệu scan được OCR chuẩn hóa và tiêu chí nghiệm thu được chốt sớm."},
+}
+
+
+def _evaluate_tokai(requirements: list[dict]) -> dict:
+    """Đánh giá đáp ứng 41 requirement Tokai theo nội dung (deterministic).
+
+    Ưu tiên: OCR/scan → △; bảo mật/Entra/暗号 → △; nghiệm thu độ chính xác → △;
+    chức năng lõi RAG (trả lời, truy hồi, song ngữ, sự cố tương tự) → ◎;
+    phi chức năng vận hành → ○.
+    """
+    items = []
+    for item in requirements:
+        content = str(item.get("content", ""))
+        if any(word in content for word in ("スキャン", "OCR", "文字認識")):
+            rating, note = "△", "OCR tài liệu scan cần xác nhận chất lượng và tỉ lệ nhận dạng trước khi chốt phương án."
+        elif any(word in content for word in ("セキュリティ", "認証", "暗号", "Entra", "学習利用")):
+            rating, note = "△", "Cần xác nhận tiêu chuẩn bảo mật và cấu hình triển khai trước khi kết luận."
+        elif any(word in content for word in ("正答率", "評価用質問")):
+            rating, note = "△", "Tiêu chí nghiệm thu độ chính xác cần thống nhất với khách trước khi chốt."
+        elif any(word in content for word in ("質問応答", "回答", "検索", "類似", "故障履歴", "多言語", "対訳")):
+            rating, note = "◎", "Chức năng này phù hợp trực tiếp với phạm vi trợ lý tri thức bảo trì."
+        elif any(word in content for word in ("性能", "応答時間", "稼働", "利用者", "データ量", "研修", "マニュアル", "環境")):
+            rating, note = "○", "Có thể đáp ứng bằng cấu hình vận hành và thiết kế phi chức năng phù hợp."
+        else:
+            rating, note = "○", "Có thể đáp ứng trong phạm vi trợ lý tri thức bảo trì sau khi xác nhận chi tiết nghiệp vụ."
+        items.append(
+            {
+                "req_code": item["req_code"],
+                "rating": rating,
+                "needs_clarification": rating in {"△", "cần làm rõ"},
+                "note_vi": note,
+            }
+        )
+    return {"batch": items}
+
 _SOLUTION_FIXTURES = {
     "rag": {
         "direction": "rag",
@@ -203,80 +369,163 @@ _GAP_TOO_MANY = {
 
 # ---------------------------------------------------------------- WbsStructure (M4)
 
-# Fixture "good": WBS 3 cấp đủ 3 phase, mỗi phase ≥ 1 PM + ≥ 1 QA, không vòng,
-# weights [20,20,20,15,15,10] — đảm bảo mọi lá man_day ≤ 10 kể cả factor cap 2.0.
-_WBS_GOOD = {
-    "tasks": [
-        # ---- poc
-        {"task_code": "WBS-001", "name_vi": "PoC — Khảo sát và thiết kế", "phase": "poc", "parent_code": None, "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-001-01", "name_vi": "Khảo sát hiện trạng", "phase": "poc", "parent_code": "WBS-001", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-001-01-01", "name_vi": "Phỏng vấn khách hàng", "phase": "poc", "parent_code": "WBS-001-01", "role": "pm", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-01-02", "name_vi": "Kiểm thử PoC", "phase": "poc", "parent_code": "WBS-001-01", "role": "qa", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-02", "name_vi": "Thiết kế giải pháp", "phase": "poc", "parent_code": "WBS-001", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-001-02-01", "name_vi": "Phân tích nghiệp vụ", "phase": "poc", "parent_code": "WBS-001-02", "role": "ba", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-02-02", "name_vi": "Dựng mẫu RAG", "phase": "poc", "parent_code": "WBS-001-02", "role": "ai_engineer", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-02-03", "name_vi": "Lắp ráp backend mẫu", "phase": "poc", "parent_code": "WBS-001-02", "role": "backend", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-02-04", "name_vi": "Giao diện mẫu", "phase": "poc", "parent_code": "WBS-001-02", "role": "frontend", "weight": 15, "depends_on": []},
-        # ---- mvp
-        {"task_code": "WBS-002", "name_vi": "MVP — Phát triển lõi", "phase": "mvp", "parent_code": None, "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-002-01", "name_vi": "Phát triển chức năng chính", "phase": "mvp", "parent_code": "WBS-002", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-002-01-01", "name_vi": "Điều phối dự án", "phase": "mvp", "parent_code": "WBS-002-01", "role": "pm", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-002-01-02", "name_vi": "API xử lý dữ liệu", "phase": "mvp", "parent_code": "WBS-002-01", "role": "backend", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-002-01-03", "name_vi": "Màn hình quản trị", "phase": "mvp", "parent_code": "WBS-002-01", "role": "frontend", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-002-01-04", "name_vi": "Kiểm thử MVP", "phase": "mvp", "parent_code": "WBS-002-01", "role": "qa", "weight": 15, "depends_on": ["WBS-002-01-02"]},
-        {"task_code": "WBS-002-02", "name_vi": "Tối ưu truy vấn", "phase": "mvp", "parent_code": "WBS-002", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-002-02-01", "name_vi": "Huấn luyện mô hình", "phase": "mvp", "parent_code": "WBS-002-02", "role": "ai_engineer", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-002-02-02", "name_vi": "Chuẩn bị hạ tầng", "phase": "mvp", "parent_code": "WBS-002-02", "role": "infra", "weight": 10, "depends_on": []},
-        # ---- production
-        {"task_code": "WBS-003", "name_vi": "Production — Hoàn thiện và bàn giao", "phase": "production", "parent_code": None, "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-003-01", "name_vi": "Hoàn thiện hệ thống", "phase": "production", "parent_code": "WBS-003", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-003-01-01", "name_vi": "Quản lý release", "phase": "production", "parent_code": "WBS-003-01", "role": "pm", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-003-01-02", "name_vi": "Tối ưu hiệu năng", "phase": "production", "parent_code": "WBS-003-01", "role": "backend", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-003-01-03", "name_vi": "Kiểm thử chấp nhận", "phase": "production", "parent_code": "WBS-003-01", "role": "qa", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-003-02", "name_vi": "Chuyển giao", "phase": "production", "parent_code": "WBS-003", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-003-02-01", "name_vi": "Đào tạo người dùng", "phase": "production", "parent_code": "WBS-003-02", "role": "frontend", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-003-02-02", "name_vi": "Hỗ trợ vận hành", "phase": "production", "parent_code": "WBS-003-02", "role": "ai_engineer", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-003-02-03", "name_vi": "Cài đặt hạ tầng production", "phase": "production", "parent_code": "WBS-003-02", "role": "infra", "weight": 10, "depends_on": []},
-    ],
-    "notes_vi": ["WBS giả lập cho milestone M4"],
+# Đợt 14 (C2): mock WBS được SINH bằng builder để mọi task lá ≤ 10 man-day
+# kể cả factor cap 2.0 (rag: poc 100/mvp 370/production 160; none: 55/200/95).
+# Cây 3 cấp (nhóm→task→lá), mỗi phase ≥ 1 lá pm + ≥ 1 lá qa, không vòng phụ
+# thuộc. Giữ mã neo mà test dùng: WBS-001-01-01 (pm poc), WBS-002-01-02
+# (backend mvp), WBS-002-01-04 (qa mvp), ...
+
+_WBS_ROLE_ORDER = ("pm", "ba", "backend", "frontend", "qa", "ai_engineer", "infra", "brse")
+
+# Vai trò của subgroup ĐẦU TIÊN mỗi phase — giữ đúng mã neo của fixture cũ.
+_WBS_FIRST_SUBGROUP_ROLES = {
+    "poc": ["pm", "qa", "ba", "backend"],
+    "mvp": ["pm", "backend", "frontend", "qa"],
+    "production": ["pm", "backend", "qa", "frontend"],
 }
 
-# Hướng "Không dùng AI": KHÔNG có task RAG/huấn luyện mô hình, KHÔNG có ai_engineer (N3).
-_WBS_NONE = {
-    "tasks": [
-        # ---- poc
-        {"task_code": "WBS-001", "name_vi": "PoC — Khảo sát và thiết kế", "phase": "poc", "parent_code": None, "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-001-01", "name_vi": "Khảo sát hiện trạng", "phase": "poc", "parent_code": "WBS-001", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-001-01-01", "name_vi": "Phỏng vấn khách hàng", "phase": "poc", "parent_code": "WBS-001-01", "role": "pm", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-01-02", "name_vi": "Kiểm thử PoC", "phase": "poc", "parent_code": "WBS-001-01", "role": "qa", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-02", "name_vi": "Thiết kế giải pháp", "phase": "poc", "parent_code": "WBS-001", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-001-02-01", "name_vi": "Phân tích nghiệp vụ", "phase": "poc", "parent_code": "WBS-001-02", "role": "ba", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-001-02-02", "name_vi": "Thiết kế mô hình dữ liệu CRM", "phase": "poc", "parent_code": "WBS-001-02", "role": "ba", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-02-03", "name_vi": "Lắp ráp backend mẫu", "phase": "poc", "parent_code": "WBS-001-02", "role": "backend", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-001-02-04", "name_vi": "Giao diện mẫu", "phase": "poc", "parent_code": "WBS-001-02", "role": "frontend", "weight": 15, "depends_on": []},
-        # ---- mvp
-        {"task_code": "WBS-002", "name_vi": "MVP — Phát triển lõi", "phase": "mvp", "parent_code": None, "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-002-01", "name_vi": "Phát triển chức năng chính", "phase": "mvp", "parent_code": "WBS-002", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-002-01-01", "name_vi": "Điều phối dự án", "phase": "mvp", "parent_code": "WBS-002-01", "role": "pm", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-002-01-02", "name_vi": "API xử lý dữ liệu", "phase": "mvp", "parent_code": "WBS-002-01", "role": "backend", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-002-01-03", "name_vi": "Màn hình quản trị", "phase": "mvp", "parent_code": "WBS-002-01", "role": "frontend", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-002-01-04", "name_vi": "Kiểm thử MVP", "phase": "mvp", "parent_code": "WBS-002-01", "role": "qa", "weight": 15, "depends_on": ["WBS-002-01-02"]},
-        {"task_code": "WBS-002-02", "name_vi": "Hoàn thiện quy trình", "phase": "mvp", "parent_code": "WBS-002", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-002-02-01", "name_vi": "Chuẩn hóa dữ liệu CRM", "phase": "mvp", "parent_code": "WBS-002-02", "role": "ba", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-002-02-02", "name_vi": "Chuẩn bị hạ tầng", "phase": "mvp", "parent_code": "WBS-002-02", "role": "infra", "weight": 10, "depends_on": []},
-        # ---- production
-        {"task_code": "WBS-003", "name_vi": "Production — Hoàn thiện và bàn giao", "phase": "production", "parent_code": None, "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-003-01", "name_vi": "Hoàn thiện hệ thống", "phase": "production", "parent_code": "WBS-003", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-003-01-01", "name_vi": "Quản lý release", "phase": "production", "parent_code": "WBS-003-01", "role": "pm", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-003-01-02", "name_vi": "Tối ưu hiệu năng", "phase": "production", "parent_code": "WBS-003-01", "role": "backend", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-003-01-03", "name_vi": "Kiểm thử chấp nhận", "phase": "production", "parent_code": "WBS-003-01", "role": "qa", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-003-02", "name_vi": "Chuyển giao", "phase": "production", "parent_code": "WBS-003", "role": None, "weight": None, "depends_on": []},
-        {"task_code": "WBS-003-02-01", "name_vi": "Đào tạo người dùng", "phase": "production", "parent_code": "WBS-003-02", "role": "frontend", "weight": 20, "depends_on": []},
-        {"task_code": "WBS-003-02-02", "name_vi": "Hỗ trợ vận hành", "phase": "production", "parent_code": "WBS-003-02", "role": "qa", "weight": 15, "depends_on": []},
-        {"task_code": "WBS-003-02-03", "name_vi": "Cài đặt hạ tầng production", "phase": "production", "parent_code": "WBS-003-02", "role": "infra", "weight": 10, "depends_on": []},
-    ],
-    "notes_vi": ["WBS giả lập cho hướng Không dùng AI (không có AI Engineer)"],
+# Vòng vai trò cho các subgroup tiếp theo — nghiêng về backend (dự án phát
+# triển thường backend là nút thắt lịch) để thay đổi headcount backend thực sự
+# làm thay đổi lịch (test schedule_update giữ nguyên ý nghĩa).
+_WBS_ROLE_CYCLE = (
+    "pm", "backend", "ba", "backend", "frontend", "qa",
+    "backend", "ai_engineer", "infra", "brse", "backend", "frontend",
+)
+
+_WBS_FIRST_SUBGROUP_NAMES = {
+    "poc": ["Phỏng vấn khách hàng", "Kiểm thử PoC", "Phân tích nghiệp vụ", "Lắp ráp backend mẫu"],
+    "mvp": ["Điều phối dự án", "API xử lý dữ liệu", "Màn hình quản trị", "Kiểm thử MVP"],
+    "production": ["Quản lý release", "Tối ưu hiệu năng", "Kiểm thử chấp nhận", "Đào tạo người dùng"],
 }
+
+_WBS_NAME_POOLS: dict[str, list[str]] = {
+    "pm": ["Điều phối dự án", "Quản lý tiến độ", "Báo cáo tiến độ", "Quản lý rủi ro"],
+    "ba": ["Phân tích nghiệp vụ", "Khảo sát hiện trạng", "Chuẩn hóa quy trình", "Thu thập yêu cầu"],
+    "backend": ["Phát triển API", "Xử lý dữ liệu", "Tích hợp hệ thống", "Tối ưu truy vấn"],
+    "frontend": ["Phát triển giao diện", "Màn hình quản trị", "Tối ưu hiển thị", "Kiểm thử giao diện"],
+    "qa": ["Kiểm thử chức năng", "Kiểm thử chấp nhận", "Kiểm thử hiệu năng", "Rà soát chất lượng"],
+    "ai_engineer": ["Dựng mẫu AI", "Xây dựng chỉ mục", "Đánh giá chất lượng trả lời", "Tinh chỉnh prompt"],
+    "infra": ["Chuẩn bị hạ tầng", "Cài đặt môi trường", "Giám sát vận hành"],
+    "brse": ["Làm rõ yêu cầu", "Đối chiếu nghiệp vụ"],
+}
+
+# Hướng RAG: tên task phản ánh đúng hồ sơ Tokai (OCR, chỉ mục, song ngữ,
+# tìm sự cố tương tự) — Đợt 14 E.
+_WBS_RAG_NAME_POOLS: dict[str, list[str]] = {
+    **_WBS_NAME_POOLS,
+    "ai_engineer": [
+        "OCR tài liệu scan",
+        "Xây dựng chỉ mục tài liệu",
+        "Trả lời song ngữ Nhật–Việt",
+        "Tìm sự cố tương tự từ lịch sử bảo trì",
+        "Đánh giá chất lượng truy hồi",
+        "Chuẩn hóa tài liệu nguồn",
+    ],
+    "backend": [
+        "API truy hồi tài liệu",
+        "Tích hợp ghi nhận nguồn trả lời",
+        "Xử lý ảnh tài liệu",
+        "Tối ưu truy vấn chỉ mục",
+    ],
+}
+
+
+def _wbs_tree(
+    leaves_per_phase: dict[str, int], *, direction: str, notes: list[str]
+) -> dict:
+    """Sinh cây WBS 3 cấp cân bằng với số lá cho trước mỗi phase.
+
+    Mỗi lá có role + weight 10 (man_day do code phân bổ theo midpoint phase);
+    đủ lá để mọi lá ≤ 10 man-day kể cả factor cap 2.0.
+    """
+    phase_prefix = {"poc": "WBS-001", "mvp": "WBS-002", "production": "WBS-003"}
+    phase_label = {"poc": "PoC", "mvp": "MVP", "production": "Production"}
+    pools = _WBS_RAG_NAME_POOLS if direction == "rag" else _WBS_NAME_POOLS
+    # Hướng "Không dùng AI" KHÔNG được có vai trò ai_engineer (N3).
+    if direction == "none":
+        role_cycle = tuple(role for role in _WBS_ROLE_CYCLE if role != "ai_engineer")
+    else:
+        role_cycle = _WBS_ROLE_CYCLE
+    tasks: list[dict] = []
+    # Bộ đếm theo role dùng CHUNG cho cả 3 phase để tên task xoay vòng toàn cục
+    # (nếu reset theo phase, các role ít xuất hiện sẽ chỉ lặp vài tên đầu).
+    role_counter: dict[str, int] = {}
+    for phase, count in leaves_per_phase.items():
+        prefix = phase_prefix[phase]
+        tasks.append(
+            {
+                "task_code": prefix,
+                "name_vi": f"{phase_label[phase]} — Triển khai",
+                "phase": phase,
+                "parent_code": None,
+                "role": None,
+                "weight": None,
+                "depends_on": [],
+            }
+        )
+        subgroup_index = 1
+        leaf_index = 1
+        while leaf_index <= count:
+            sub_code = f"{prefix}-{subgroup_index:02d}"
+            tasks.append(
+                {
+                    "task_code": sub_code,
+                    "name_vi": f"{phase_label[phase]} — Nhóm {subgroup_index}",
+                    "phase": phase,
+                    "parent_code": prefix,
+                    "role": None,
+                    "weight": None,
+                    "depends_on": [],
+                }
+            )
+            if subgroup_index == 1:
+                roles = _WBS_FIRST_SUBGROUP_ROLES[phase]
+                fixed_names = _WBS_FIRST_SUBGROUP_NAMES[phase]
+            else:
+                roles = list(role_cycle)
+                fixed_names = None
+            for slot, role in enumerate(roles):
+                if leaf_index > count:
+                    break
+                counter = role_counter.get(role, 0)
+                role_counter[role] = counter + 1
+                if fixed_names is not None:
+                    name = fixed_names[slot]
+                else:
+                    name = pools[role][counter % len(pools[role])]
+                tasks.append(
+                    {
+                        "task_code": f"{sub_code}-{slot + 1:02d}",
+                        "name_vi": name,
+                        "phase": phase,
+                        "parent_code": sub_code,
+                        "role": role,
+                        "weight": 10,
+                        "depends_on": [],
+                    }
+                )
+                leaf_index += 1
+            subgroup_index += 1
+    return {"tasks": tasks, "notes_vi": notes}
+
+
+# Fixture "good": WBS 3 cấp đủ 3 phase, mỗi phase ≥ 1 PM + ≥ 1 QA, không vòng,
+# đủ lá để mọi lá man_day ≤ 10 kể cả factor cap 2.0 (Đợt 14 C2).
+# Số lá chọn sao cho target/lá đủ nhỏ để sai số làm tròn (dồn vào lá lớn nhất)
+# không đẩy lá vượt 10: mvp 370/42 ≈ 8.8 (+0.4 dồn) → ≤ 9.2.
+_WBS_GOOD = _wbs_tree(
+    {"poc": 12, "mvp": 42, "production": 18},
+    direction="rag",
+    notes=["WBS giả lập cho milestone M4 — đủ lá để mọi lá ≤ 10 man-day"],
+)
+
+# Hướng "Không dùng AI": KHÔNG có task RAG/huấn luyện mô hình, KHÔNG có
+# ai_engineer (N3); vẫn đủ lá để mọi lá ≤ 10 man-day.
+_WBS_NONE = _wbs_tree(
+    {"poc": 8, "mvp": 22, "production": 12},
+    direction="none",
+    notes=["WBS giả lập cho hướng Không dùng AI (không có AI Engineer)"],
+)
 
 # Fixture "flat_ok": WBS 2 cấp hợp lệ (tối thiểu) — đủ PM/QA mỗi phase.
 _WBS_FLAT = {
@@ -555,9 +804,76 @@ _REGISTRY["good"]["EmailDraft"] = {
 }
 
 
+# ---------------------------------------------------------------- Truy vết requirement (B5 mock)
+
+# Requirement chứa từ khóa này → coi là "cần làm rõ" → mock KHÔNG gán mã cho task
+# (chưa đủ thông tin để lập kế hoạch — thiet_ke_danh_gia.md §4).
+_UNCLEAR_KEYWORDS = ("未定", "要相談", "不明", "tbd", "chưa rõ", "cần làm rõ", "調整中")
+# Tích hợp hệ thống ngoài chưa xác định giao diện → cần làm rõ trước khi lập kế
+# hoạch. Với mẫu ja_email khớp đúng FR-019 (会計システム) và FR-020 (販売管理システム)
+# → 34/36 được truy vết, 2 mục cần làm rõ nằm trong danh sách "chưa có task".
+_EXTERNAL_INTEGRATION_KEYWORDS = ("会計システム", "販売管理システム")
+
+
+def _is_unclear_requirement(req: dict) -> bool:
+    content = str(req.get("content") or "")
+    lowered = content.casefold()
+    if req.get("unclear"):
+        return True
+    if any(token in content for token in _UNCLEAR_KEYWORDS):
+        return True
+    if any(token in lowered for token in _UNCLEAR_KEYWORDS):
+        return True
+    return any(token in content for token in _EXTERNAL_INTEGRATION_KEYWORDS)
+
+
+def _assign_requirement_codes(base: dict, context: dict | None) -> dict:
+    """Gán requirement_codes cho task lá theo category (thiet_ke_danh_gia.md §4).
+
+    FR → task lá role backend/frontend, NFR → task lá role infra/qa, theo vòng
+    tròn. Requirement "cần làm rõ" KHÔNG được gán.
+    """
+    tasks = [dict(task) for task in base["tasks"]]
+    requirements = (context or {}).get("requirements_data") or []
+    fr_codes = [
+        req["req_code"]
+        for req in requirements
+        if str(req.get("req_code", "")).upper().startswith("FR")
+        and not _is_unclear_requirement(req)
+    ]
+    nfr_codes = [
+        req["req_code"]
+        for req in requirements
+        if str(req.get("req_code", "")).upper().startswith("NFR")
+        and not _is_unclear_requirement(req)
+    ]
+    fe_leaves = [t for t in tasks if t.get("role") in ("backend", "frontend")]
+    nfr_leaves = [t for t in tasks if t.get("role") in ("infra", "qa")]
+    for index, code in enumerate(fr_codes):
+        if fe_leaves:
+            leaf = fe_leaves[index % len(fe_leaves)]
+            leaf.setdefault("requirement_codes", []).append(code)
+    for index, code in enumerate(nfr_codes):
+        if nfr_leaves:
+            leaf = nfr_leaves[index % len(nfr_leaves)]
+            leaf.setdefault("requirement_codes", []).append(code)
+    return {"tasks": tasks, "notes_vi": list(base.get("notes_vi", []))}
+
+
 def _content_fixture(name: str, context: dict | None) -> dict | None:
-    """Fixtures có ngữ nghĩa cho demo CRM, vẫn hoàn toàn deterministic."""
+    """Fixtures có ngữ nghĩa cho demo CRM/Tokai, vẫn hoàn toàn deterministic."""
     context = context or {}
+    # Bộ mẫu Tokai — kiểm tra TRƯỚC các nhánh CRM/budget để không bị nhầm
+    # (RFP Tokai cũng chứa từ khóa 予算/2027年) (Đợt 14 E).
+    if _is_tokai_context(context):
+        if name == "IntakeExtraction":
+            return _INTAKE_TOKAI
+        if name == "GapQuestions" and context.get("rounds_used", 0) < 1:
+            return _GAP_TOKAI
+        if name == "SolutionProposal":
+            return _SOLUTION_TOKAI
+        if name == "EvaluationBatch" and context.get("requirements"):
+            return _evaluate_tokai(context["requirements"])
     if name == "GapQuestions" and context.get("rounds_used", 0) >= 1:
         answers = context.get("previous_answers", [])
         texts = [str(item.get("answer", "")).strip() for item in answers]
@@ -607,9 +923,11 @@ def _content_fixture(name: str, context: dict | None) -> dict | None:
         text = " ".join(str(context.get(key, "")) for key in ("request", "intake", "sample_profile")).lower()
         if any(word in text for word in ("crm", "khách hàng", "顧客", "customer")):
             return {**_SOLUTION_FIXTURES["none"], "reason_vi": "CRM chủ yếu là dữ liệu có cấu trúc và quy trình nghiệp vụ xác định; chọn giải pháp truyền thống, không cần RAG. Loại RAG vì không có nhu cầu truy hồi tài liệu phi cấu trúc; loại agent vì luồng thao tác cần kiểm soát; loại fine-tune và ML vì chưa có bài toán dự đoán cần huấn luyện."}
-    if name == "WbsStructure" and context.get("direction") == "none":
-        # Hướng "Không dùng AI": WBS không có task RAG/huấn luyện mô hình, không có AI Engineer (N3).
-        return _WBS_NONE
+    if name == "WbsStructure":
+        # Gán requirement_codes cho task lá theo category (FR → backend/frontend,
+        # NFR → infra/qa, vòng tròn); requirement "cần làm rõ" không được gán.
+        base = _WBS_NONE if context.get("direction") == "none" else _WBS_GOOD
+        return _assign_requirement_codes(base, context)
     return None
 
 

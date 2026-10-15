@@ -53,6 +53,9 @@ class WbsItem(Base):
     role: Mapped[str | None] = mapped_column(String(30), nullable=True)
     weight: Mapped[int | None] = mapped_column(Integer, nullable=True)
     man_day: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Truy vết requirement (thiet_ke_danh_gia.md §4): mã requirement task lá thực
+    # hiện (tối đa 8). JSON nullable — migration tự thêm cột ở db.py.
+    requirement_codes: Mapped[list | None] = mapped_column(JSON, nullable=True)
     sort_order: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default=text("0")
     )

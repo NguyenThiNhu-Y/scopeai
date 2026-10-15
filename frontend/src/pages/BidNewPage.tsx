@@ -21,6 +21,11 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = ['pdf', 'docx', 'txt', 'md', 'xlsx', 'xls', 'csv', 'zip'];
 const LANGUAGE_OPTIONS: CustomerLanguage[] = ['vi', 'en', 'ja'];
 const CURRENCY_OPTIONS = ['VND', 'JPY', 'USD'];
+const SAMPLE_OPTIONS: { key: SampleKey; badge: string; title: string }[] = [
+  { key: 'ja_email', badge: 'JA', title: 'Hồ sơ CRM cho khách hàng Nhật' },
+  { key: 'vi_email', badge: 'VI', title: 'Bộ hồ sơ CRM tiếng Việt' },
+  { key: 'tokai_minato', badge: 'JA', title: 'RFP trợ lý AI bảo trì nhà máy (Nhật)' },
+];
 
 interface FormState {
   project_name: string;
@@ -175,7 +180,7 @@ export default function BidNewPage() {
     <div className="mx-auto max-w-6xl px-6 py-8 lg:px-10">
       <p className="text-sm font-medium text-blue-600">Tạo hồ sơ</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Tạo hồ sơ mới</h1>
-      <p className="mt-2 text-base text-slate-600">Dán email/RFP và đính kèm mọi tài liệu. Trợ lý dự thầu sẽ phân tích sau một lần bấm.</p>
+      <p className="mt-2 text-base text-slate-600">Dán email/RFP và đính kèm mọi tài liệu. BidPilot sẽ phân tích sau một lần bấm.</p>
        <span className="sr-only" role="status">{health.data?.status === 'ok' ? 'Dịch vụ sẵn sàng' : ''}</span>
 
       {message && <p role="alert" className={`mt-5 rounded-lg border px-4 py-3 text-sm ${message.kind === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>{message.text}</p>}
@@ -212,7 +217,7 @@ export default function BidNewPage() {
         </form>
 
         <aside className="space-y-5">
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 px-4 py-4"><h2 className="font-semibold text-slate-900">Bộ hồ sơ RFP mẫu</h2><p className="mt-1 text-xs text-slate-500">Email, tài liệu RFP và bảng yêu cầu mẫu.</p></div><div className="space-y-3 p-4">{(['ja_email', 'vi_email'] as SampleKey[]).map((key) => <div key={key} className="rounded-lg border border-slate-200 p-3"><div className="flex items-start justify-between gap-2"><div><span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold">{key === 'ja_email' ? 'JA' : 'VI'}</span><p className="mt-2 text-sm font-medium text-slate-800">{key === 'ja_email' ? 'Hồ sơ CRM cho khách hàng Nhật' : 'Bộ hồ sơ CRM tiếng Việt'}</p></div><button type="button" disabled={busy} onClick={() => chooseSample(key)} className="shrink-0 rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100">{selectedSample === key ? 'Đã chọn' : 'Dùng bộ này'}</button></div>{selectedSample === key && samplePreview && <div className="mt-3 border-t border-slate-100 pt-2 text-xs text-slate-500">{samplePreview.files.map((file) => <div key={file.filename} className="flex justify-between gap-2 py-1"><span className="truncate">{file.filename}</span><span>{formatSize(file.size_bytes)}</span></div>)}</div>}</div>)}</div></section>
+          <section className="rounded-xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 px-4 py-4"><h2 className="font-semibold text-slate-900">Bộ hồ sơ RFP mẫu</h2><p className="mt-1 text-xs text-slate-500">Email, tài liệu RFP và bảng yêu cầu mẫu.</p></div><div className="space-y-3 p-4">{SAMPLE_OPTIONS.map((option) => <div key={option.key} className="rounded-lg border border-slate-200 p-3"><div className="flex items-start justify-between gap-2"><div><span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold">{option.badge}</span><p className="mt-2 text-sm font-medium text-slate-800">{option.title}</p></div><button type="button" disabled={busy} onClick={() => chooseSample(option.key)} className="shrink-0 rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100">{selectedSample === option.key ? 'Đã chọn' : 'Dùng bộ này'}</button></div>{selectedSample === option.key && samplePreview && <div className="mt-3 border-t border-slate-100 pt-2 text-xs text-slate-500">{samplePreview.files.map((file) => <div key={file.filename} className="flex justify-between gap-2 py-1"><span className="truncate">{file.filename}</span><span>{formatSize(file.size_bytes)}</span></div>)}</div>}</div>)}</div></section>
           <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><h2 className="font-semibold text-slate-900">Sau khi bấm Phân tích</h2><ol className="mt-3 space-y-2 text-sm text-slate-600"><li>1. Tạo hồ sơ và tải file</li><li>2. Đọc file, đếm requirement</li><li>3. Phân tích và hỏi làm rõ nếu cần</li></ol><p className="mt-3 text-xs leading-relaxed text-slate-500">Bạn không cần sang trang khác hay bấm thêm nút. Nếu có lỗi, dữ liệu vẫn được giữ lại để thử lại.</p></section>
         </aside>
       </div>

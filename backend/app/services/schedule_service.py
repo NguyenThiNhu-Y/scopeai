@@ -216,6 +216,9 @@ def update_schedule(
         payment_milestones=milestones,
         holidays=load_holidays(),
         go_no_go_gap_working_days=data.go_no_go_gap_working_days,
+        customer_poc_end=bid.customer_poc_end,
+        customer_mvp_start=bid.customer_mvp_start,
+        customer_production_start=bid.customer_production_start,
     )
 
     sched = (

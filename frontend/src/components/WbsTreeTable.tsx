@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { WbsChange, WbsItem, WbsPhase, WbsRole } from '../api/types';
 import { PHASE_LABELS, ROLE_LABELS } from '../lib/format';
 import { flattenTree } from '../lib/wbs';
@@ -20,6 +20,7 @@ interface DraftRow {
   man_day: number | null;
   is_new: boolean;
   is_leaf: boolean;
+  requirement_codes: string[];
 }
 
 interface WbsTreeTableProps {
@@ -31,6 +32,10 @@ interface WbsTreeTableProps {
    */
   onSaveChanges: (changes: WbsChange[], note?: string) => void;
   disabled?: boolean;
+  /** Map mã requirement → nội dung (hover chip hiện nội dung). */
+  requirementContents?: Record<string, string>;
+  /** Danh sách mã requirement có thể gán (datalist gợi ý khi sửa). */
+  availableRequirementCodes?: string[];
 }
 
 function toDraft(item: WbsItem): DraftRow {
@@ -44,6 +49,7 @@ function toDraft(item: WbsItem): DraftRow {
     man_day: item.man_day,
     is_new: false,
     is_leaf: item.is_leaf,
+    requirement_codes: item.requirement_codes ?? [],
   };
 }
 
@@ -58,7 +64,7 @@ type DisplayRow =
  * - Mã và tên cùng một dòng; "+ Thêm task" ở cuối mỗi nhóm.
  * - Một nút "Lưu thay đổi" cho cả bảng → PUT /wbs một lần.
  */
-export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = false }: WbsTreeTableProps) {
+export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = false, requirementContents = {}, availableRequirementCodes = [] }: WbsTreeTableProps) {
   const [drafts, setDrafts] = useState<Record<string, DraftRow>>({});
   const [removals, setRemovals] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<string[]>([]);
@@ -93,6 +99,7 @@ export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = 
         man_day: null,
         is_new: true,
         is_leaf: isLeaf,
+        requirement_codes: [],
       },
     }));
     setErrors([]);
@@ -161,6 +168,7 @@ export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = 
             man_day: draft.is_leaf ? draft.man_day : null,
             weight: null,
             depends_on: [],
+            requirement_codes: draft.is_leaf ? draft.requirement_codes : [],
           },
         });
         continue;
@@ -174,6 +182,9 @@ export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = 
       if (original.is_leaf) {
         if (original.role !== draft.role) fields.role = draft.role;
         if (original.man_day !== draft.man_day) fields.man_day = draft.man_day;
+        if ((original.requirement_codes ?? []).join(',') !== draft.requirement_codes.join(',')) {
+          fields.requirement_codes = draft.requirement_codes;
+        }
       }
       if (Object.keys(fields).length > 0) {
         changes.push({ op: 'update', task_code: draft.key, fields });
@@ -234,7 +245,9 @@ export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = 
         original.name_vi !== draft.name_vi.trim() ||
         original.phase !== draft.phase ||
         (original.is_leaf &&
-          (original.role !== draft.role || original.man_day !== draft.man_day))
+          (original.role !== draft.role ||
+            original.man_day !== draft.man_day ||
+            (original.requirement_codes ?? []).join(',') !== draft.requirement_codes.join(',')))
       );
     }).length;
     return edits + removals.size;
@@ -249,13 +262,14 @@ export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = 
             <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Giai đoạn</th>
             <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Vai trò</th>
             <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Man-day</th>
+            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Requirement</th>
             <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           {displayRows.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-3 py-8 text-center text-sm text-slate-500">
+              <td colSpan={6} className="px-3 py-8 text-center text-sm text-slate-500">
                 Chưa có task nào trong WBS.
               </td>
             </tr>
@@ -269,6 +283,8 @@ export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = 
                   draft={row.draft}
                   updateField={updateField}
                   onRemove={() => removeTask(row.draft.key)}
+                  requirementContents={requirementContents}
+                  availableRequirementCodes={availableRequirementCodes}
                 />
               );
             }
@@ -280,6 +296,8 @@ export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = 
                   level={row.level}
                   updateField={updateField}
                   onRemove={() => removeTask(row.draft.key)}
+                  requirementContents={requirementContents}
+                  availableRequirementCodes={availableRequirementCodes}
                 />
               );
             }
@@ -288,7 +306,7 @@ export default function WbsTreeTable({ items, saving, onSaveChanges, disabled = 
             );
           })}
           <tr className="border-t border-slate-200 bg-slate-50/70">
-            <td colSpan={5} className="px-3 py-3">
+            <td colSpan={6} className="px-3 py-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-xs text-slate-500">
                   {changeCount > 0 ? `${changeCount} thay đổi chưa lưu` : 'Không có thay đổi nào.'}
@@ -333,11 +351,15 @@ function WbsItemRow({
   draft,
   updateField,
   onRemove,
+  requirementContents,
+  availableRequirementCodes,
 }: {
   item: WbsItem;
   draft: DraftRow;
   updateField: (key: string, patch: Partial<DraftRow>) => void;
   onRemove: () => void;
+  requirementContents: Record<string, string>;
+  availableRequirementCodes: string[];
 }) {
   const pad = { paddingLeft: `${(item.level - 1) * 1.5}rem` };
   return (
@@ -382,6 +404,18 @@ function WbsItemRow({
         )}
       </td>
       <td className="px-3 py-2 align-top">
+        {draft.is_leaf ? (
+          <RequirementCell
+            codes={draft.requirement_codes}
+            available={availableRequirementCodes}
+            contents={requirementContents}
+            onChange={(requirement_codes) => updateField(draft.key, { requirement_codes })}
+          />
+        ) : (
+          <span className="text-slate-400">—</span>
+        )}
+      </td>
+      <td className="px-3 py-2 align-top">
         <button
           type="button"
           onClick={onRemove}
@@ -400,11 +434,15 @@ function WbsNewRow({
   level,
   updateField,
   onRemove,
+  requirementContents,
+  availableRequirementCodes,
 }: {
   draft: DraftRow;
   level: number;
   updateField: (key: string, patch: Partial<DraftRow>) => void;
   onRemove: () => void;
+  requirementContents: Record<string, string>;
+  availableRequirementCodes: string[];
 }) {
   const pad = { paddingLeft: `${(level - 1) * 1.5}rem` };
   return (
@@ -457,6 +495,18 @@ function WbsNewRow({
         )}
       </td>
       <td className="px-3 py-2 align-top">
+        {draft.is_leaf ? (
+          <RequirementCell
+            codes={draft.requirement_codes}
+            available={availableRequirementCodes}
+            contents={requirementContents}
+            onChange={(requirement_codes) => updateField(draft.key, { requirement_codes })}
+          />
+        ) : (
+          <span className="text-sm text-slate-400">—</span>
+        )}
+      </td>
+      <td className="px-3 py-2 align-top">
         <button
           type="button"
           onClick={onRemove}
@@ -472,7 +522,7 @@ function WbsNewRow({
 function AddTaskRow({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <tr className="border-b border-slate-100 bg-slate-50/40">
-      <td colSpan={5} className="px-3 py-1.5">
+      <td colSpan={6} className="px-3 py-1.5">
         <button
           type="button"
           onClick={onClick}
@@ -511,5 +561,97 @@ function RoleSelect({ value, onChange }: { value: WbsRole | null; onChange: (rol
         <option key={role} value={role}>{ROLE_LABELS[role]}</option>
       ))}
     </select>
+  );
+}
+
+/**
+ * Ô "Requirement" trong WBS (thiet_ke_danh_gia.md §7): chip mã tối đa 3 rồi "+n",
+ * hover hiện nội dung requirement; bấm ✎ để sửa (input mã cách nhau dấu phẩy,
+ * datalist gợi ý mã có sẵn). Chỉ hiển thị trên task lá — backend chặn task nhóm.
+ */
+function RequirementCell({
+  codes,
+  available,
+  contents,
+  onChange,
+}: {
+  codes: string[];
+  available: string[];
+  contents: Record<string, string>;
+  onChange: (codes: string[]) => void;
+}) {
+  const listId = useId();
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(codes.join(', '));
+
+  function commit() {
+    const parsed = text
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    // Bỏ trùng, giữ thứ tự, tối đa 8 mã (khớp backend WbsTaskIn.max_length=8).
+    const unique = Array.from(new Set(parsed)).slice(0, 8);
+    onChange(unique);
+    setText(unique.join(', '));
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') commit();
+            if (event.key === 'Escape') {
+              setText(codes.join(', '));
+              setEditing(false);
+            }
+          }}
+          list={listId}
+          aria-label="Mã requirement (cách nhau dấu phẩy)"
+          className={`${inputClass} w-44 font-mono text-xs`}
+          placeholder="FR-001, NFR-002"
+        />
+        <datalist id={listId}>
+          {available.map((code) => <option key={code} value={code} />)}
+        </datalist>
+      </div>
+    );
+  }
+
+  if (codes.length === 0) {
+    return (
+      <button type="button" onClick={() => { setText(''); setEditing(true); }} className="text-xs text-slate-400 hover:text-blue-600">
+        + Gán
+      </button>
+    );
+  }
+
+  const shown = codes.slice(0, 3);
+  const rest = codes.length - 3;
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {shown.map((code) => (
+        <span key={code} title={contents[code] ?? code} className="rounded bg-blue-50 px-1.5 py-0.5 font-mono text-xs text-blue-700">
+          {code}
+        </span>
+      ))}
+      {rest > 0 && (
+        <span title={codes.slice(3).join(', ')} className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+          +{rest}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={() => { setText(codes.join(', ')); setEditing(true); }}
+        aria-label="Sửa mã requirement"
+        className="text-xs text-slate-400 hover:text-blue-600"
+      >
+        ✎
+      </button>
+    </div>
   );
 }

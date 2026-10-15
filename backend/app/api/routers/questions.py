@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from zipfile import BadZipFile
 from fastapi import APIRouter, Depends, Query, UploadFile, File
 from fastapi.responses import Response
 from io import BytesIO
 from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font, Protection
 from openpyxl.utils.exceptions import InvalidFileException
 from sqlalchemy.orm import Session
 
 from app.api.deps import Identity, get_db, get_identity
 from app.api.errors import state_conflict
+from app.exporters import xlsx_style as st
+from app.exporters.filename import content_disposition, export_filename
+from app.models import ExportLog
 from app.pipeline import is_running, resume
 from app.schemas.api_schemas.question import (
     AnswerItemIn,
@@ -43,25 +47,61 @@ def _customer_reason(language: str, impact: str, fallback: str) -> str:
     }
     return labels.get(language, labels["vi"]).get(impact, fallback)
 
+QA_TEXT = {
+    "ja": {
+        "headers": ["質問コード", "ラウンド", "質問", "理由", "回答"],
+        "guide_sheet": "記入方法", "title": "ご質問事項（Q&A）", "project": "案件名", "customer": "お客様", "date": "発行日",
+        "steps": ["黄色の「回答」列のみご記入ください。", "質問コード・ラウンドは変更しないでください（取込時の照合に使用します）。", "未確定の項目は空欄のままで構いません。"],
+    },
+    "en": {
+        "headers": ["Question code", "Round", "Question", "Reason", "Answer"],
+        "guide_sheet": "Instructions", "title": "Clarification questions (Q&A)", "project": "Project", "customer": "Customer", "date": "Issued",
+        "steps": ["Please fill in the yellow Answer column only.", "Do not change Question code or Round; they are used to match your answers.", "Leave the answer blank if it is not decided yet."],
+    },
+    "vi": {
+        "headers": ["Mã câu hỏi", "Vòng", "Câu hỏi", "Lý do", "Trả lời"],
+        "guide_sheet": "Hướng dẫn", "title": "Câu hỏi làm rõ (Q&A)", "project": "Dự án", "customer": "Khách hàng", "date": "Ngày phát hành",
+        "steps": ["Vui lòng chỉ điền cột Trả lời (màu vàng).", "Không sửa Mã câu hỏi và Vòng — dùng để đối chiếu khi nhập lại.", "Để trống nếu chưa có câu trả lời."],
+    },
+}
+
+
 @router.get("/{bid_id}/questions/export")
-def export_questions(bid_id: int, session: Session = Depends(get_db)):
+def export_questions(bid_id: int, session: Session = Depends(get_db), identity: Identity = Depends(get_identity)):
     bid = get_bid_or_404(session, bid_id)
     rows = list_questions(session, bid_id)["items"]
+    lang = bid.customer_language if bid.customer_language in QA_TEXT else "vi"
+    text = QA_TEXT[lang]
+    today = date.today().isoformat()
     wb = Workbook(); ws = wb.active; ws.title = "Q&A"
-    lang = bid.customer_language
-    headers = {
-        "ja": ["質問コード", "ラウンド", "質問", "理由", "回答"],
-        "en": ["Question code", "Round", "Question", "Reason", "Answer"],
-        "vi": ["Mã câu hỏi", "Vòng", "Câu hỏi", "Lý do", "Trả lời"],
-    }[lang]
-    ws.append(headers)
-    from openpyxl.styles import PatternFill
-    yellow = PatternFill(fill_type="solid", fgColor="FFFF00")
+    st.header_row(ws, 1, text["headers"])
     for q in rows:
         ws.append([q.id, q.round_no, q.question, _customer_reason(lang, q.impact, q.reason_vi), q.answer or ""])
-        ws.cell(ws.max_row, 5).fill = yellow
+        answer = ws.cell(ws.max_row, 5)
+        answer.fill = st.ANSWER_FILL
+        answer.protection = Protection(locked=False)
+    st.body_cells(ws, 2, max(ws.max_row, 2), 1, 5, wrap=True)
+    st.widths(ws, [14, 9, 60, 30, 50])
+    ws.freeze_panes = "A2"
+    # Lock everything but the answer column so codes/rounds cannot be edited by mistake (no password).
+    ws.protection.sheet = True
+    ws.protection.formatColumns = False
+    ws.protection.formatRows = False
+
+    guide = wb.create_sheet(text["guide_sheet"])
+    st.title(guide, text["title"], 2)
+    for offset, (key, value) in enumerate([(text["project"], bid.project_name), (text["customer"], bid.customer_name), (text["date"], today)], 3):
+        guide.cell(offset, 1, key).font = Font(bold=True)
+        guide.cell(offset, 2, value)
+    for offset, step in enumerate(text["steps"], 7):
+        guide.cell(offset, 1, f"{offset - 6}.")
+        guide.cell(offset, 2, step)
+    st.widths(guide, [16, 90])
+
     out = BytesIO(); wb.save(out)
-    return Response(out.getvalue(), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f'attachment; filename="qa_{bid.id}.xlsx"'})
+    session.add(ExportLog(bid_id=bid.id, kind="qa_xlsx", actor=identity.user, price_gate="n/a", ja_check=None)); session.commit()
+    filename = export_filename(bid.customer_name, bid.project_name, "QA", export_date=today, ext="xlsx")
+    return Response(out.getvalue(), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": content_disposition(filename)})
 
 @router.post("/{bid_id}/questions/import", response_model=AnswersOut)
 async def import_questions(bid_id: int, file: UploadFile = File(...), session: Session = Depends(get_db), identity: Identity = Depends(get_identity)):
@@ -71,7 +111,9 @@ async def import_questions(bid_id: int, file: UploadFile = File(...), session: S
         if len(payload) > MAX_QA_UPLOAD_BYTES:
             from app.api.errors import validation_error
             raise validation_error("Q&A sheet vượt quá giới hạn 5 MB", {"max_bytes": MAX_QA_UPLOAD_BYTES})
-        ws = load_workbook(BytesIO(payload), read_only=True, data_only=True).active
+        book = load_workbook(BytesIO(payload), read_only=True, data_only=True)
+        # The customer may save the file while viewing the instructions sheet.
+        ws = book["Q&A"] if "Q&A" in book.sheetnames else book.active
         headers = [str(value or "").strip().casefold() for value in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
         aliases = {
             "code": {"mã câu hỏi", "question code", "質問コード"},

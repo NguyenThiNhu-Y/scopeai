@@ -13,6 +13,7 @@ import FileParseReview from '../components/FileParseReview';
 import RequirementMatrix from '../components/RequirementMatrix';
 import EffortBreakdown from '../components/EffortBreakdown';
 import BidPlanTab from '../components/BidPlanTab';
+import ConfidenceCard from '../components/ConfidenceCard';
 import ProposalPage from './ProposalPage';
 import ApprovalsPage from './ApprovalsPage';
 
@@ -128,6 +129,7 @@ export default function BidDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ['bid', bidId] });
       void queryClient.invalidateQueries({ queryKey: ['questions', bidId] });
       void queryClient.invalidateQueries({ queryKey: ['evaluations', bidId] });
+      void queryClient.invalidateQueries({ queryKey: ['confidence', bidId] });
     }, 3000);
     return () => window.clearInterval(timer);
   }, [bidId, bid?.status, queryClient]);
@@ -146,7 +148,7 @@ export default function BidDetailPage() {
   // SSE `done` → hồ sơ chuyển sang bước duyệt kỹ thuật → cập nhật + tắt stream.
   useEffect(() => {
     if (events.done) {
-      for (const key of ['bid', 'attachments', 'evaluations', 'effort', 'quotation', 'schedule', 'questions', 'proposal', 'wbs', 'history']) {
+      for (const key of ['bid', 'attachments', 'evaluations', 'effort', 'quotation', 'schedule', 'questions', 'proposal', 'wbs', 'history', 'confidence']) {
         void queryClient.invalidateQueries({ queryKey: [key, bidId] });
       }
       void queryClient.invalidateQueries({ queryKey: ['bids'] });
@@ -179,6 +181,13 @@ export default function BidDetailPage() {
     const intakeStep = mergedSteps.find((s) => s.step_key === 'intake');
     return intakeStep?.output_json ?? null;
   }, [mergedSteps]);
+
+  // D1: rủi ro mức CAO NHẤT từ risks có cấu trúc (type_vi/level/description_vi/mitigation_vi.
+  const topRisk = useMemo(() => {
+    const risks = evaluationsQuery.data?.solution_direction?.risks;
+    if (!risks || risks.length === 0) return null;
+    return risks.reduce((max, risk) => (risk.level > max.level ? risk : max));
+  }, [evaluationsQuery.data?.solution_direction?.risks]);
 
   const failedStep = mergedSteps.find((s) => s.status === 'failed');
   const anyRunning =
@@ -318,7 +327,7 @@ export default function BidDetailPage() {
   function handleAnswersSubmitted() {
     // E.2: gửi trả lời → pipeline resume → invalidate MỌI tab để tự tải lại.
     setStreamOn(true);
-    for (const key of ['bid', 'attachments', 'evaluations', 'effort', 'quotation', 'schedule', 'questions', 'proposal', 'wbs', 'history']) {
+    for (const key of ['bid', 'attachments', 'evaluations', 'effort', 'quotation', 'schedule', 'questions', 'proposal', 'wbs', 'history', 'confidence']) {
       void queryClient.invalidateQueries({ queryKey: [key, bidId] });
     }
     void queryClient.invalidateQueries({ queryKey: ['bids'] });
@@ -458,6 +467,7 @@ export default function BidDetailPage() {
       {activeTab === 'overview' && (
         <div role="tabpanel" aria-labelledby="tab-overview">
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ConfidenceCard bidId={bidId} enabled={pipelineAdvanced} onViewDetail={() => setTab('plan')} />
           <OverviewCard title="Mục tiêu của khách" tab="requirements" onNavigate={setTab}>
             {intakeOutput ? (
               <div className="space-y-3">
@@ -486,11 +496,11 @@ export default function BidDetailPage() {
           </OverviewCard>
 
            <OverviewCard title="Khả thi" tab="solution" onNavigate={setTab}>
-             {bid.status === BID_STATUS.error ? <OverviewEmpty text="Hồ sơ đang lỗi. Mở Giải pháp để xem bước cần chạy lại." tone="error" /> : evaluationsQuery.data?.solution_direction?.feasibility ? <p className="text-sm text-[var(--muted)]">Đã có đánh giá khả thi định tính. Mở Giải pháp để xem chi tiết.</p> : null}
+             {bid.status === BID_STATUS.error ? <OverviewEmpty text="Hồ sơ đang lỗi. Mở Giải pháp để xem bước cần chạy lại." tone="error" /> : evaluationsQuery.data?.solution_direction?.feasibility_score ? <div className="space-y-2"><div className="text-2xl font-semibold text-[var(--ink)]">{evaluationsQuery.data.solution_direction.feasibility_score.score}<span className="text-sm font-normal text-[var(--muted)]">/5</span></div><p className="text-sm leading-6 text-[var(--muted)]">{evaluationsQuery.data.solution_direction.feasibility_score.reason_vi}</p></div> : evaluationsQuery.data?.solution_direction?.feasibility ? <p className="text-sm text-[var(--muted)]">Đã có đánh giá khả thi định tính. Mở Giải pháp để xem chi tiết.</p> : null}
           </OverviewCard>
 
           <OverviewCard title="Rủi ro lớn nhất" tab="solution" onNavigate={setTab}>
-             {pipelineErrorMessage ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm leading-6 text-red-700">{pipelineErrorMessage}</p> : evaluationsQuery.data?.solution_direction?.risks_vi?.length ? <ul className="space-y-2 text-sm text-[var(--muted)]">{evaluationsQuery.data.solution_direction.risks_vi.slice(0, 3).map((risk) => <li key={risk} className="border-l-2 border-amber-400 pl-3">{risk}</li>)}</ul> : null}
+             {pipelineErrorMessage ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm leading-6 text-red-700">{pipelineErrorMessage}</p> : topRisk ? <div className="space-y-2 text-sm text-[var(--muted)]"><div className="flex flex-wrap items-center gap-2"><span className="font-semibold text-[var(--ink)]">{topRisk.type_vi}</span><span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">Mức {topRisk.level}/5</span></div><p className="leading-6">{topRisk.description_vi}</p>{topRisk.mitigation_vi ? <p className="leading-6"><span className="font-semibold text-[var(--ink)]">Giảm thiểu:</span> {topRisk.mitigation_vi}</p> : null}</div> : evaluationsQuery.data?.solution_direction?.risks_vi?.length ? <ul className="space-y-2 text-sm text-[var(--muted)]">{evaluationsQuery.data.solution_direction.risks_vi.slice(0, 3).map((risk) => <li key={risk} className="border-l-2 border-amber-400 pl-3">{risk}</li>)}</ul> : null}
           </OverviewCard>
 
           <OverviewCard title="Effort & kế hoạch" tab="plan" onNavigate={setTab}>
@@ -515,7 +525,7 @@ export default function BidDetailPage() {
                 </div>
                 {quotationQuery.data.budget && (
                   <p className="text-xs text-[var(--muted)]">
-                    Ngân sách khách: {formatAmount(quotationQuery.data.budget.amount, quotationQuery.data.budget.currency)} ·{' '}
+                    {quotationQuery.data.budget.scope_label_vi ?? 'Ngân sách khách'}: {formatAmount(quotationQuery.data.budget.amount, quotationQuery.data.budget.currency)} ·{' '}
                     {quotationQuery.data.budget.difference == null
                       ? 'chưa đủ dữ liệu so sánh'
                       : `chênh lệch ${formatAmount(quotationQuery.data.budget.difference, quotationQuery.data.currency)}`}
@@ -617,7 +627,7 @@ export default function BidDetailPage() {
         </div>
       )}
 
-      {activeTab === 'plan' && <div role="tabpanel" aria-labelledby="tab-plan" className="mt-8"><BidPlanTab bidId={bidId} /></div>}
+      {activeTab === 'plan' && <div role="tabpanel" aria-labelledby="tab-plan" className="mt-8"><BidPlanTab bidId={bidId} onNavigateTab={setTab} /></div>}
       {activeTab === 'coverage' && <div role="tabpanel" aria-labelledby="tab-coverage" className="mt-8 space-y-6">
         {bid.no_requirement_file && <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Khách không gửi file Excel requirement. Ma trận đáp ứng sẽ không hiển thị.</p>}
         {!bid.no_requirement_file && evaluationsQuery.isPending && <p role="status" className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">Đang tải ma trận đáp ứng…</p>}

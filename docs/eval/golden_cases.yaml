@@ -1,0 +1,59 @@
+# DỮ LIỆU GIẢ LẬP — bộ đề chuẩn (golden cases) cho bộ đánh giá offline.
+# "expected" là đáp án do tác giả (presales) đặt cho hồ sơ giả lập, không phải số liệu dự án thật.
+# Upload thành docs/eval/golden_cases.yaml; agent tách mỗi case thành 1 file trong backend/eval/cases/.
+
+- id: gc_crm_ja
+  title: CRM cho khách Nhật — bộ hồ sơ mẫu tiếng Nhật
+  input:
+    sample_key: ja_email            # dùng bộ mẫu có sẵn trong sample_service
+  answers:                          # câu trả lời tự động cho câu hỏi làm rõ (theo thứ tự)
+    default: 想定どおりで問題ありません。
+  expected:
+    acceptable_directions: [none]
+    requirement_count: 36
+    total_man_day: [220, 270]
+    phase_man_day:
+      poc: [28, 38]
+      mvp: [130, 170]
+      production: [55, 75]
+    duration_weeks: [24, 30]
+    customer_milestones:
+      start: 2027-01-01
+      mvp: 2027-06-01
+      production: 2027-09-01
+    must_trace: [FR-001, FR-009, FR-013, NFR-003]
+    max_question_rounds: 1
+
+- id: gc_inventory_vi
+  title: Quản lý kho — bộ hồ sơ mẫu tiếng Việt
+  input:
+    sample_key: vi_email
+  answers:
+    default: Đúng như mô tả, không có yêu cầu thêm.
+  expected:
+    acceptable_directions: [none]
+    total_man_day: [160, 200]
+    phase_man_day:
+      poc: [20, 30]
+      mvp: [95, 120]
+      production: [40, 55]
+    duration_weeks: [18, 24]
+    max_question_rounds: 1
+
+- id: gc_tokai_rag
+  title: Trợ lý tri thức bảo trì — hồ sơ Tokai Minato (RAG, PoC trước)
+  input:
+    sample_key: tokai_minato        # cần nối thư mục sample_data/rfp_tokai_minato vào sample_service
+  answers:
+    default: RFPに記載のとおりです。PoCは豊橋工場のマシニングセンタ系設備に限定します。
+  expected:
+    acceptable_directions: [rag]
+    phase_man_day:
+      poc: [60, 90]
+    poc_duration_weeks: [10, 13]
+    budget: {amount: 15000000, currency: JPY, scope: poc}
+    customer_milestones:
+      poc_start: 2026-12-01
+    question_topics_hint: [dữ liệu scan/OCR, bảo mật trên Azure của khách, ngôn ngữ Nhật–Việt]
+    max_question_rounds: 2
+  note: Hồ sơ chỉ yêu cầu báo giá PoC; chỉ chấm giai đoạn PoC, không chấm MVP/Production.

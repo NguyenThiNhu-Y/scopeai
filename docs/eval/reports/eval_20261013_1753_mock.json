@@ -1,0 +1,90 @@
+{
+  "provider": "mock",
+  "model": "mock",
+  "started_at": "2026-10-13 17:53:16",
+  "repeat": 1,
+  "case_ids": [
+    "gc_crm_ja",
+    "gc_inventory_vi",
+    "gc_tokai_rag"
+  ],
+  "per_case": {
+    "gc_crm_ja": [
+      {
+        "direction": "none",
+        "direction_ok": true,
+        "total_ape": 14.3,
+        "total_in_expected": false,
+        "interval_hit": true,
+        "phase_share_error": 0.033,
+        "traceability_pct": 94.4,
+        "must_trace_ok": true,
+        "checks_pass": 0.8,
+        "duration_weeks_error": 19.3,
+        "question_rounds": 0,
+        "question_count": 0,
+        "confidence_level": "low",
+        "llm_calls": 6,
+        "seconds": 0.18,
+        "stability_cv": null,
+        "bid_id": 140
+      }
+    ],
+    "gc_inventory_vi": [
+      {
+        "direction": "none",
+        "direction_ok": true,
+        "total_ape": 2.8,
+        "total_in_expected": true,
+        "interval_hit": true,
+        "phase_share_error": 0.026,
+        "traceability_pct": 0.0,
+        "must_trace_ok": true,
+        "checks_pass": 0.8,
+        "duration_weeks_error": 12.6,
+        "question_rounds": 0,
+        "question_count": 0,
+        "confidence_level": "low",
+        "llm_calls": 12,
+        "seconds": 0.07,
+        "stability_cv": null,
+        "bid_id": 141
+      }
+    ],
+    "gc_tokai_rag": [
+      {
+        "direction": "none",
+        "direction_ok": false,
+        "total_ape": 47.2,
+        "total_in_expected": false,
+        "interval_hit": false,
+        "phase_share_error": 0.0,
+        "traceability_pct": 100.0,
+        "must_trace_ok": true,
+        "checks_pass": 0.6,
+        "duration_weeks_error": 2.4,
+        "question_rounds": 0,
+        "question_count": 0,
+        "confidence_level": "low",
+        "llm_calls": 18,
+        "seconds": 0.27,
+        "stability_cv": null,
+        "bid_id": 142
+      }
+    ]
+  },
+  "summary": {
+    "case_count": 3,
+    "mape": 21.4,
+    "total_in_expected_rate": 0.333,
+    "interval_hit_rate": 0.667,
+    "direction_ok_pct": 66.7,
+    "avg_traceability_pct": 64.8,
+    "checks_pass_pct": 73.3,
+    "avg_question_rounds": 0.0,
+    "avg_question_count": 0.0,
+    "avg_llm_calls": 12.0,
+    "avg_seconds": 0.17
+  },
+  "seconds": 1.81
+}

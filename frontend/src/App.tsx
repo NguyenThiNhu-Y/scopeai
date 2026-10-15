@@ -9,9 +9,9 @@ import HistoryPage from './pages/HistoryPage';
 
 function AppLayout() {
   return (
-    <div className="flex min-h-screen bg-[var(--page)]">
+    <div className="flex h-screen overflow-hidden bg-[var(--page)]">
       <Sidebar />
-      <main className="min-w-0 flex-1 px-4 sm:px-6 lg:px-8">
+      <main className="min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8">
         <Outlet />
       </main>
     </div>

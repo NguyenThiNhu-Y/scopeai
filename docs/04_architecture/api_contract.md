@@ -631,8 +631,8 @@ client. Mọi số trong proposal được code render từ quotation/schedule; 
 
 ### 10.4 `GET /api/bids/{id}/exports/bundle.zip` — Gói file xuất (M7)
 
-**Mô tả:** Sinh một gói ZIP deterministic chứa các file M7 đã sinh cho cùng hồ sơ: proposal
-Word, estimate Excel (gồm sheet `Q&A`) và proposal PDF. Nếu một file chưa từng được sinh,
+**Mô tả:** Sinh một gói ZIP deterministic chứa các file M7 đã sinh cho cùng hồ sơ theo thứ tự cố định: proposal
+Word, estimate Excel (gồm sheet `Q&A`), proposal PDF và slide PowerPoint. Nếu một file chưa từng được sinh,
 backend sinh file đó trước khi đóng gói; không đưa file tạm, đường dẫn máy chủ hay secret vào ZIP.
 
 **Response 200:** `application/zip`, `Content-Disposition: attachment`.
@@ -649,6 +649,23 @@ Không phải endpoint riêng. Backend dựng sheet từ câu hỏi đã persist
 `Trạng thái`. Câu hỏi và trả lời khách dùng `customer_language`; lý do và nhãn nội bộ dùng tiếng
 Việt. Sheet này cho khách điền rồi presales nhập lại qua endpoint M2 hiện có, không được dùng để
 ghi đè trực tiếp DB khi upload lại trong M7.
+
+### 10.6 `GET /api/bids/{id}/exports/proposal.pptx` — Slide tóm tắt proposal
+
+**Response 200:** `application/vnd.openxmlformats-officedocument.presentationml.presentation`.
+
+- Slide 16:9 theo `customer_language`: bìa, nội dung, các section của draft, giả định/ngoài phạm vi, tổng hợp
+  effort, Gantt và báo giá. Gantt/mốc thanh toán vẽ bằng shape sửa được (không phải ảnh).
+- Mọi số lấy từ WBS/schedule/quotation đã persist; không gọi LLM để dựng file.
+- Cổng giá như Word: chưa duyệt → slide báo giá chỉ có `[Presales điền]`.
+- Ghi `export_logs` với `kind=pptx`; header `X-Ja-Check-Result` như §10.1.
+
+### 10.7 Quy tắc chung cho file xuất
+
+- Ngày trong tên file là ngày xuất thực tế, dùng chung cho mọi file của cùng request.
+- `Content-Disposition` gồm `filename` ASCII và `filename*=UTF-8''...` (áp dụng cả `requirements.xlsx`
+  và `questions/export`).
+- Endpoint từng file chỉ sinh file đó (tải Word/Excel/PPTX không phụ thuộc bộ chuyển PDF).
 
 ---
 
@@ -686,7 +703,9 @@ sections đã được server render; không nhận số effort/giá/lịch từ
 ### 10.0b `GET/POST /api/bids/{id}/questions/export|import` — Q&A sheet (B3-05)
 
 `GET` trả workbook `Q&A` theo ngôn ngữ khách, gồm mã câu hỏi, `Vòng`, câu hỏi, lý do và câu trả lời;
-toàn bộ ô cột answer được tô vàng để khách điền. `POST` nhận multipart field `file`, giới hạn 5 MB
+toàn bộ ô cột answer được tô vàng để khách điền. Sheet `Q&A` bị khóa (không mật khẩu) trừ cột answer; kèm sheet
+hướng dẫn theo ngôn ngữ khách; tên file theo quy tắc `<Khách>_<Dự án>_QA_v1_<ngày>.xlsx`; ghi `export_logs`
+`kind=qa_xlsx`. Khi nhập lại, backend ưu tiên sheet tên `Q&A`. `POST` nhận multipart field `file`, giới hạn 5 MB
 và 200 dòng, chỉ nhập câu trả lời cho cặp mã câu hỏi + vòng đang chờ. Dòng trống, câu đã đóng hoặc
 mã không tồn tại được bỏ qua và trả trong `warnings`; file thiếu cột, hỏng hoặc vượt giới hạn trả
 `400 VALIDATION_ERROR`. Nhập lại file không tạo câu trả lời trùng.
@@ -719,13 +738,13 @@ the post-PoC break interval without deriving dates in the browser.
 | M4 — WBS + schedule (FR-032, FR-034, FR-041) | GET/PUT `/api/bids/{id}/wbs`, POST `/api/bids/{id}/wbs/snapshot`, GET/PUT `/api/bids/{id}/schedule` |
 | M5 — Proposal + giá + duyệt (FR-040, FR-042, FR-043, FR-044) | GET/PUT `/api/bids/{id}/proposal`, GET `/api/bids/{id}/quotation`, POST `/api/bids/{id}/approvals/tech`, POST `/api/bids/{id}/approvals/price`, POST `/api/bids/{id}/unlock` |
 | M6 — Đính kèm + ma trận đáp ứng (FR-002..006*, FR-020, FR-021) | POST/GET `/api/bids/{id}/attachments`, PUT `/api/bids/{id}/attachments/{attachment_id}`, POST `/api/bids/{id}/parse`, PUT `/api/bids/{id}/parse/confirm`, GET `/api/bids/{id}/evaluations` (đầy đủ) |
-| M7 — Xuất file (FR-025, FR-050, FR-051, FR-052) | GET `/api/bids/{id}/exports/proposal.docx`, `/exports/estimate.xlsx`, `/exports/proposal.pdf`, `/exports/bundle.zip` |
+| M7 — Xuất file (FR-025, FR-050, FR-051, FR-052) | GET `/api/bids/{id}/exports/proposal.docx`, `/exports/estimate.xlsx`, `/exports/proposal.pdf`, `/exports/proposal.pptx`, `/exports/bundle.zip` |
 | M8 — Hoàn thiện (FR-060, FR-061) | GET `/api/settings`, PUT `/api/settings/{key}` |
 
 **Ghi chú reconcile:**
 - **FR-020/021 (ma trận đáp ứng)** đặt ở M6 (roadmap PM); M3 chỉ cần bản đánh giá tối thiểu làm nền cho hướng giải pháp — endpoint `GET evaluations` triển khai tối thiểu ở M3, đầy đủ ở M6.
 - **FR-044 (kiểm tra trước duyệt)** ở M5: mục "không sót requirement" cần ma trận đáp ứng (M6) — M5 triển khai các mục còn lại (schema, ±20%, PM/QA), M6 nối dữ liệu; giao diện báo cáo kiểm tra thống nhất ngay từ M5.
-- **PowerPoint:** ngoài MVP (SRS §8.2) — contract không có endpoint xuất .pptx; nếu cần bản tóm tắt nội bộ, làm ở frontend từ dữ liệu hiện có, không thêm API.
+- **PowerPoint:** đã đưa vào phạm vi theo yêu cầu người dùng (2026-10-15) — endpoint `GET /api/bids/{id}/exports/proposal.pptx` (§10.6); bundle gồm 4 file.
 
 ---
 

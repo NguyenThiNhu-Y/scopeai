@@ -594,7 +594,7 @@ Ngoài ra, mỗi milestone phải:
 2. ✅ **Endpoint API mỗi milestone:** đã ánh xạ đầy đủ tại `api_contract.md` §12 (M1 health · M2 bids/questions/pipeline/SSE/rerun · M3 solution/effort · M4 wbs/schedule · M5 quotation/approvals · M6 attachments/parse/evaluations · M7 exports · M8 settings).
 3. ✅ **FR-044 phụ thuộc M6:** ghi nhận trong `api_contract.md` §12 — M5 triển khai các mục còn lại, M6 nối dữ liệu ma trận; giao diện báo cáo kiểm tra thống nhất ngay từ M5.
 4. ✅ **FR-025 ở M7:** chấp nhận — kiểm tra tiếng Nhật phục vụ xuất tài liệu; bộ mẫu 20 câu là fixture từ M2. Pipeline LLM của SA có bước ja_check (bước 7) khớp vị trí M7.
-5. ✅ **PowerPoint:** thống nhất **ngoài MVP** (SRS §8.2) — M7 xuất Word/Excel/PDF; PowerPoint tóm tắt là tùy chọn, không chặn milestone, không có endpoint API (đã ghi trong contract §12).
+5. ✅ **PowerPoint:** ban đầu ngoài MVP (SRS §8.2); **cập nhật 2026-10-15:** đã thêm xuất `.pptx` bằng code (contract §10.6), bundle gồm 4 file.
 6. ⏳ **Câu hỏi mở handoff:** SA đã chốt phương án thiết kế cho cả 10 (#1 ADR-003 repo YAML + override DB · #2/#5 persist + SSE · #3 snapshot JSON · #4 khóa ở service layer · #6 rule-based + LLM · #7 LibreOffice + Noto CJK · #9 trần hệ số 2.0 · #10 overhead trên phần offshore). **Số giả lập cụ thể** (effort min–max, rate card, tỉ giá) cần BA/PM phê duyệt **trước M3** — roadmap M3 đã có deliverable này.
 7. ✅ **FR-006 chia 2 giai đoạn** (M2 text, M6 đầy đủ) — chấp nhận; demo S-01 có bộ mẫu đầy đủ trước khi đóng M6.
 8. ⏳ **Việc cần làm tiếp:** cài **LibreOffice headless + font Noto CJK** vào image Preview (SA) trước M7; kịch bản demo S-01 phải **đổi X-Role** khi duyệt giá (chặn tự duyệt FR-042.2).

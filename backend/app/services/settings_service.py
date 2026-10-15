@@ -7,14 +7,23 @@ from sqlalchemy.orm import Session
 
 from app.api.errors import validation_error
 from app.models import Bid, Changelog, ReferenceSetting
+from app.schemas.case_study import normalize_case_studies
 from app.services.reference_service import ROOT, load_effort, load_factors, load_rate_card
 
-FILES = {"effort": "effort.yaml", "rate_card": "rate_card.yaml", "factors": "factors.yaml"}
+FILES = {
+    "effort": "effort.yaml",
+    "rate_card": "rate_card.yaml",
+    "factors": "factors.yaml",
+    # Thư viện case study mặc định — gộp từ case_studies_gia_lap.yaml (bỏ
+    # cs_rag_maintenance_jp_vn) + case_studies_tokai.yaml (thiet_ke_danh_gia.md §3.1).
+    "case_studies": "case_studies.yaml",
+    # Ngưỡng độ tin cậy từng hồ sơ (thiet_ke_danh_gia.md §5).
+    "confidence": "confidence.yaml",
+}
 OPTIONAL_DEFAULTS = {
     "company": {"company_name": "Công ty Mẫu Presales", "logo_filename": None, "filename_rule": "{customer}_{project}_{version}"},
-    "templates": {"word": {"source": "builtin", "filename": "proposal-default.docx", "valid": True}, "excel": {"source": "builtin", "filename": "quotation-default.xlsx", "valid": True}, "powerpoint": {"source": "builtin", "filename": "proposal-default.pptx", "valid": True}},
+    "templates": {"word": {"source": "builtin", "filename": "Mẫu trung tính (sinh bằng code)", "valid": True}, "excel": {"source": "builtin", "filename": "Mẫu trung tính (sinh bằng code)", "valid": True}, "powerpoint": {"source": "builtin", "filename": "Mẫu trung tính (sinh bằng code)", "valid": True}},
     "standard_content": {"vi": {"company_intro": "Giới thiệu công ty mẫu", "security": "Bảo mật theo thỏa thuận", "terms": "Điều khoản mẫu"}, "en": {"company_intro": "Fictional company introduction", "security": "Security subject to agreement", "terms": "Sample terms"}, "ja": {"company_intro": "サンプル会社の紹介", "security": "合意に基づくセキュリティ", "terms": "サンプル条件"}},
-    "case_studies": [{"title": "Cổng dữ liệu mẫu", "industry": "Bán lẻ", "summary": "Case study giả lập, không chỉ tên khách hàng thật"}],
     "bid_no_bid": {"criteria": [{"id": "strategic_fit", "label_vi": "Phù hợp chiến lược", "weight": 30}, {"id": "delivery_feasibility", "label_vi": "Khả năng triển khai", "weight": 40}, {"id": "commercial_fit", "label_vi": "Phù hợp thương mại", "weight": 30}]},
 }
 
@@ -26,10 +35,21 @@ def _repo_payload(key: str) -> dict:
         return yaml.safe_load(fh)
 
 
+def get_optional_setting(session: Session, key: str) -> dict:
+    row = session.get(ReferenceSetting, key)
+    payload = row.payload if row else OPTIONAL_DEFAULTS.get(key, {})
+    return payload if isinstance(payload, dict) else {}
+
+
 def _validate(key: str, payload: object) -> dict | list:
     if key == "case_studies":
-        if not isinstance(payload, list):
-            raise validation_error("Case study phải là YAML dạng danh sách", {"errors": ["root"]})
+        # Validate từng case theo schema bảng 3.2 (thiet_ke_danh_gia.md §3.2).
+        _, errors = normalize_case_studies(payload)
+        if errors:
+            raise validation_error(
+                "Case study không hợp lệ, giá trị cũ vẫn được giữ nguyên",
+                {"errors": errors},
+            )
         return payload
     if not isinstance(payload, dict):
         raise validation_error("Bảng chuẩn phải là YAML dạng object", {"errors": ["root"]})

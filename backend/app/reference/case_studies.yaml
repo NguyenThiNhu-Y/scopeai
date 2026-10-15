@@ -1,0 +1,597 @@
+# DỮ LIỆU GIẢ LẬP — thư viện case study mặc định (docs/eval/thiet_ke_danh_gia.md §3).
+# Gộp từ docs/eval/case_studies_gia_lap.yaml (bỏ cs_rag_maintenance_jp_vn) +
+# docs/eval/du_an_cu_tokai/case_studies_tokai.yaml. Không phải dự án/công ty thật.
+- id: cs_none_crm_jp
+  title: Hệ thống CRM cho công ty thương mại Nhật (giả lập)
+  industry: Thương mại
+  market: jp
+  customer_language: ja
+  direction: none
+  requirement_count: 34
+  factors:
+  - customer_jp
+  - many_requirements
+  year: 2025
+  public: true
+  summary: Thay quản lý khách hàng bằng Excel bằng CRM web; tích hợp kế toán qua CSV;
+    giao diện tiếng Nhật.
+  estimated_man_day:
+    poc: 30
+    mvp: 138
+    production: 60
+  actual_man_day:
+    poc: 31
+    mvp: 142
+    production: 62
+  actual_duration_weeks:
+    poc: 4
+    go_no_go: 2
+    mvp: 14
+    production: 7
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    backend: 2
+    frontend: 2
+    qa: 1
+    infra: 1
+  lessons_vi:
+  - Khách yêu cầu nhập dữ liệu cũ từ nhiều file Excel khác định dạng, tốn thêm khoảng
+    6 man-day.
+  - Phân quyền theo phòng ban cần chốt sớm ở PoC.
+- id: cs_none_inventory_vn
+  title: Quản lý kho cho doanh nghiệp sản xuất Việt Nam (giả lập)
+  industry: Sản xuất
+  market: vn
+  customer_language: vi
+  direction: none
+  requirement_count: 22
+  factors: []
+  year: 2024
+  public: true
+  summary: Quản lý nhập xuất tồn theo thời gian thực, cảnh báo tồn thấp, tích hợp
+    phần mềm kế toán.
+  estimated_man_day:
+    poc: 25
+    mvp: 100
+    production: 45
+  actual_man_day:
+    poc: 24
+    mvp: 108
+    production: 50
+  actual_duration_weeks:
+    poc: 3
+    go_no_go: 1
+    mvp: 11
+    production: 6
+  team_peak:
+    pm: 1
+    ba: 1
+    backend: 2
+    frontend: 1
+    qa: 1
+    infra: 1
+  lessons_vi:
+  - API phần mềm kế toán thiếu tài liệu, tích hợp chiếm khoảng 20% effort MVP.
+- id: cs_none_booking_jp
+  title: Hệ thống đặt lịch bảo trì thiết bị cho khách Nhật (giả lập)
+  industry: Dịch vụ kỹ thuật
+  market: jp
+  customer_language: ja
+  direction: none
+  requirement_count: 41
+  factors:
+  - customer_jp
+  - many_requirements
+  year: 2025
+  public: false
+  summary: Đặt lịch, điều phối kỹ thuật viên, thông báo qua email; nhiều yêu cầu báo
+    cáo theo mẫu khách.
+  estimated_man_day:
+    poc: 30
+    mvp: 135
+    production: 62
+  actual_man_day:
+    poc: 35
+    mvp: 160
+    production: 71
+  actual_duration_weeks:
+    poc: 4
+    go_no_go: 2
+    mvp: 16
+    production: 8
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    backend: 3
+    frontend: 2
+    qa: 2
+    infra: 1
+  lessons_vi:
+  - Báo cáo theo mẫu Excel của khách bị đánh giá thấp lúc ước lượng; nên tách task
+    riêng.
+- id: cs_rag_manual_jp
+  title: Tra cứu manual thiết bị on-premise cho nhà sản xuất Nhật (giả lập)
+  industry: Sản xuất
+  market: jp
+  customer_language: ja
+  direction: rag
+  requirement_count: 28
+  factors:
+  - customer_jp
+  - on_premise
+  - ocr
+  year: 2025
+  public: true
+  summary: Hỏi đáp tiếng Nhật trên khoảng 2.000 trang manual PDF, trả lời kèm số trang;
+    triển khai on-premise.
+  estimated_man_day:
+    poc: 80
+    mvp: 300
+    production: 140
+  actual_man_day:
+    poc: 88
+    mvp: 330
+    production: 150
+  actual_duration_weeks:
+    poc: 8
+    go_no_go: 3
+    mvp: 20
+    production: 10
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    ai_engineer: 2
+    backend: 2
+    frontend: 1
+    qa: 1
+    infra: 1
+  lessons_vi:
+  - Khoảng 30% PDF là bản scan, OCR và làm sạch dữ liệu chiếm nhiều effort hơn dự
+    kiến.
+  - Bộ câu hỏi đánh giá do khách soạn cần có từ PoC.
+- id: cs_rag_regulation_vn
+  title: Hỏi đáp quy định nội bộ cho ngân hàng Việt Nam (giả lập)
+  industry: Tài chính ngân hàng
+  market: vn
+  customer_language: vi
+  direction: rag
+  requirement_count: 25
+  factors:
+  - strict_compliance
+  year: 2025
+  public: true
+  summary: Hỏi đáp trên kho văn bản quy định, phân quyền theo phòng ban, lưu vết câu
+    hỏi phục vụ kiểm toán.
+  estimated_man_day:
+    poc: 55
+    mvp: 225
+    production: 100
+  actual_man_day:
+    poc: 60
+    mvp: 240
+    production: 105
+  actual_duration_weeks:
+    poc: 6
+    go_no_go: 2
+    mvp: 16
+    production: 8
+  team_peak:
+    pm: 1
+    ba: 1
+    ai_engineer: 2
+    backend: 2
+    frontend: 1
+    qa: 1
+    infra: 1
+  lessons_vi:
+  - Yêu cầu lưu vết và phân quyền theo văn bản làm tăng effort backend.
+- id: cs_agent_order_jp
+  title: Agent xử lý email đặt hàng cho công ty phân phối Nhật (giả lập)
+  industry: Phân phối
+  market: jp
+  customer_language: ja
+  direction: agent
+  requirement_count: 30
+  factors:
+  - customer_jp
+  - many_requirements
+  year: 2024
+  public: true
+  summary: Agent đọc email và PDF đặt hàng, kiểm tồn kho, tạo đơn nháp trong ERP chờ
+    người duyệt.
+  estimated_man_day:
+    poc: 58
+    mvp: 280
+    production: 130
+  actual_man_day:
+    poc: 62
+    mvp: 300
+    production: 140
+  actual_duration_weeks:
+    poc: 6
+    go_no_go: 2
+    mvp: 20
+    production: 10
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    ai_engineer: 2
+    backend: 3
+    frontend: 1
+    qa: 2
+    infra: 1
+  lessons_vi:
+  - ERP cũ chỉ có API SOAP, tích hợp chiếm khoảng 40% effort MVP.
+- id: cs_ml_forecast_vn
+  title: Dự báo nhu cầu nhập hàng cho chuỗi bán lẻ Việt Nam (giả lập)
+  industry: Bán lẻ
+  market: vn
+  customer_language: vi
+  direction: traditional_ml
+  requirement_count: 18
+  factors:
+  - data_not_ready
+  year: 2025
+  public: false
+  summary: Dự báo nhu cầu theo cửa hàng và mặt hàng, đề xuất số lượng nhập; dữ liệu
+    bán hàng phân tán nhiều hệ thống.
+  estimated_man_day:
+    poc: 50
+    mvp: 250
+    production: 110
+  actual_man_day:
+    poc: 60
+    mvp: 285
+    production: 120
+  actual_duration_weeks:
+    poc: 8
+    go_no_go: 2
+    mvp: 18
+    production: 8
+  team_peak:
+    pm: 1
+    ba: 1
+    ai_engineer: 2
+    backend: 2
+    frontend: 1
+    qa: 1
+    infra: 1
+  lessons_vi:
+  - Làm sạch và gộp dữ liệu bán hàng chiếm gần một nửa effort PoC.
+- id: cs_rag_mc_manual_aichi
+  title: Tra cứu manual máy công cụ cho nhà sản xuất linh kiện ô tô ở Aichi (giả lập)
+  industry: Sản xuất linh kiện ô tô
+  market: jp
+  customer_language: ja
+  direction: rag
+  requirement_count: 34
+  factors:
+  - customer_jp
+  - ocr
+  - many_requirements
+  year: 2025
+  public: true
+  summary: Hỏi đáp tiếng Nhật trên khoảng 1.800 file manual máy phay và máy tiện CNC
+    (khoảng 35% là PDF scan), trả lời kèm tên tài liệu và số trang; tìm sự cố tương
+    tự trên khoảng 20.000 bản ghi bảo trì; chạy trên Azure của khách, đăng nhập Entra
+    ID. PoC 3 tháng ở một xưởng, sau đó mở rộng ra 2 nhà máy.
+  tech:
+  - Azure OpenAI
+  - Azure AI Search
+  - Azure AI Document Intelligence
+  - Entra ID
+  - Python
+  - React
+  estimated_man_day:
+    poc: 82
+    mvp: 300
+    production: 130
+  actual_man_day:
+    poc: 96
+    mvp: 335
+    production: 142
+  actual_duration_weeks:
+    poc: 12
+    go_no_go: 4
+    mvp: 24
+    production: 12
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    ai_engineer: 2
+    backend: 2
+    frontend: 1
+    qa: 2
+    infra: 1
+  lessons_vi:
+  - Tỉ lệ PDF scan thực tế 35% (khách ước tính 20%), có ghi chú viết tay; OCR và kiểm
+    tra chất lượng OCR vượt khoảng 55% so với ước lượng.
+  - Bộ câu hỏi đánh giá do khách soạn đến tuần 5 của PoC mới có, phải tự làm bộ câu
+    hỏi tạm để đo sớm.
+  - Nên chốt mục tiêu tỉ lệ trả lời đúng ngay trong proposal và tách rủi ro OCR thành
+    hạng mục riêng.
+  bid_outcome:
+    result: won
+    bid_month: 2024-11
+    contract_model:
+      poc: 準委任
+      mvp: 請負
+      production: 準委任
+    win_reason_vi: PoC có cách đo tỉ lệ trả lời đúng rõ ràng; có BrSE tiếng Nhật;
+      đã có case RAG tiếng Nhật.
+  wbs_file: cs_rag_mc_manual_aichi_WBS.xlsx
+- id: cs_rag_fault_history_jp_vn
+  title: Tìm sự cố tương tự từ lịch sử bảo trì song ngữ Nhật–Việt cho nhà máy ép nhựa
+    (giả lập)
+  industry: Sản xuất linh kiện nhựa
+  market: jp
+  customer_language: ja
+  direction: rag
+  requirement_count: 30
+  factors:
+  - customer_jp
+  - multilingual
+  - many_requirements
+  year: 2025
+  public: true
+  summary: Tìm sự cố tương tự và gợi ý nguyên nhân từ khoảng 45.000 bản ghi bảo trì
+    (2016–2025) trộn tiếng Nhật và tiếng Việt của nhà máy ở Nhật và Đồng Nai; hỏi
+    đáp trên tiêu chuẩn bảo trì; trả lời theo ngôn ngữ người hỏi; dùng qua Teams.
+  tech:
+  - Azure OpenAI
+  - Azure AI Search
+  - Microsoft Teams
+  - Entra ID
+  - Python
+  - SQL Server
+  estimated_man_day:
+    poc: 75
+    mvp: 285
+    production: 120
+  actual_man_day:
+    poc: 84
+    mvp: 320
+    production: 134
+  actual_duration_weeks:
+    poc: 10
+    go_no_go: 3
+    mvp: 22
+    production: 10
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    ai_engineer: 3
+    backend: 2
+    frontend: 1
+    qa: 1
+    infra: 1
+  lessons_vi:
+  - Mã lỗi ghi không thống nhất (AL2047, al-2047, AL-2047) và khoảng 25% bản ghi thiếu
+    nguyên nhân; chuẩn hóa lịch sử sự cố vượt khoảng 60%.
+  - Từ điển thuật ngữ Nhật–Việt của khách chỉ có 600 từ, phải bổ sung cùng kỹ sư nhà
+    máy Việt Nam.
+  - Cột email người xử lý là dữ liệu cá nhân, phải che trước khi đưa vào chỉ mục.
+  bid_outcome:
+    result: won
+    bid_month: 2025-04
+    contract_model:
+      poc: 準委任
+      mvp: 請負
+      production: 準委任
+    win_reason_vi: Đội có kỹ sư tiếng Việt và BrSE; demo tìm sự cố tương tự trên dữ
+      liệu mẫu của khách ngay khi chào thầu.
+  wbs_file: cs_rag_fault_history_jp_vn_WBS.xlsx
+- id: cs_rag_sop_teams_jp
+  title: Hỏi đáp tiêu chuẩn thao tác qua Microsoft Teams cho nhà máy linh kiện điện
+    tử (giả lập)
+  industry: Sản xuất linh kiện điện tử
+  market: jp
+  customer_language: ja
+  direction: rag
+  requirement_count: 26
+  factors:
+  - customer_jp
+  - strict_compliance
+  year: 2024
+  public: true
+  summary: Hỏi đáp trên khoảng 900 tiêu chuẩn thao tác và quy trình chất lượng lưu
+    trên SharePoint; dùng qua Teams; phân quyền tài liệu theo nhà máy và phòng ban;
+    loại bản cũ khỏi câu trả lời khi tài liệu được sửa.
+  tech:
+  - Azure OpenAI
+  - Azure AI Search
+  - SharePoint Online
+  - Microsoft Teams
+  - Entra ID
+  estimated_man_day:
+    poc: 72
+    mvp: 270
+    production: 115
+  actual_man_day:
+    poc: 75
+    mvp: 285
+    production: 125
+  actual_duration_weeks:
+    poc: 8
+    go_no_go: 2
+    mvp: 20
+    production: 8
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    ai_engineer: 2
+    backend: 2
+    frontend: 1
+    qa: 1
+    infra: 1
+  lessons_vi:
+  - Đồng bộ SharePoint và loại bản cũ khỏi chỉ mục phức tạp hơn dự kiến khi thư mục
+    bị di chuyển.
+  - Phân quyền theo nhóm Entra ID phải thống nhất với bộ phận IT của khách ngay từ
+    thiết kế.
+  bid_outcome:
+    result: won
+    bid_month: 2024-07
+    contract_model:
+      poc: 準委任
+      mvp: 請負
+      production: 準委任
+    win_reason_vi: Giá cạnh tranh; đề xuất dùng lại hạ tầng Microsoft 365 sẵn có của
+      khách.
+  wbs_file: cs_rag_sop_teams_jp_WBS.xlsx
+- id: cs_rag_scan_manual_foundry_jp
+  title: Tra cứu tài liệu kỹ thuật dạng scan cho nhà máy đúc (giả lập)
+  industry: Đúc kim loại
+  market: jp
+  customer_language: ja
+  direction: rag
+  requirement_count: 24
+  factors:
+  - customer_jp
+  - ocr
+  year: 2025
+  public: false
+  summary: Hỏi đáp trên khoảng 25.000 trang tài liệu kỹ thuật cũ, khoảng 60% là bản
+    scan có chữ viết tay và bảng biểu; trả lời kèm ảnh trang gốc.
+  tech:
+  - Azure OpenAI
+  - Azure AI Search
+  - Azure AI Document Intelligence
+  - Python
+  estimated_man_day:
+    poc: 70
+    mvp: 260
+    production: 110
+  actual_man_day:
+    poc: 96
+    mvp: 306
+    production: 126
+  actual_duration_weeks:
+    poc: 14
+    go_no_go: 3
+    mvp: 22
+    production: 10
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    ai_engineer: 3
+    backend: 1
+    frontend: 1
+    qa: 2
+    infra: 1
+  lessons_vi:
+  - PoC kéo dài từ 10 lên 14 tuần vì OCR chữ viết tay và bảng biểu đạt chất lượng
+    thấp, phải thêm bước người kiểm tra.
+  - Nên lấy mẫu 50 trang scan ngẫu nhiên đo chất lượng OCR trước khi chốt effort.
+  bid_outcome:
+    result: won
+    bid_month: 2025-01
+    contract_model:
+      poc: 準委任
+      mvp: 請負
+      production: 準委任
+    win_reason_vi: Cam kết trả lời kèm ảnh trang gốc để kỹ sư tự kiểm chứng.
+  wbs_file: cs_rag_scan_manual_foundry_jp_WBS.xlsx
+- id: cs_agent_report_voice_jp
+  title: Agent lập báo cáo bảo trì từ ghi chú giọng nói cho nhà máy cơ khí (giả lập)
+  industry: Cơ khí chính xác
+  market: jp
+  customer_language: ja
+  direction: agent
+  requirement_count: 20
+  factors:
+  - customer_jp
+  year: 2025
+  public: true
+  summary: Kỹ thuật viên đọc ghi chú bằng giọng nói trên tablet; agent sinh báo cáo
+    bảo trì theo mẫu của khách, gợi ý mã lỗi và linh kiện, chờ người duyệt rồi đăng
+    ký vào hệ thống bảo trì.
+  tech:
+  - Azure OpenAI
+  - Azure AI Speech
+  - Python
+  - React
+  - .NET API
+  estimated_man_day:
+    poc: 65
+    mvp: 300
+    production: 135
+  actual_man_day:
+    poc: 70
+    mvp: 322
+    production: 140
+  actual_duration_weeks:
+    poc: 8
+    go_no_go: 2
+    mvp: 22
+    production: 10
+  team_peak:
+    pm: 1
+    ba: 1
+    brse: 1
+    ai_engineer: 2
+    backend: 2
+    frontend: 2
+    qa: 2
+    infra: 1
+  lessons_vi:
+  - Nhận dạng giọng nói trong xưởng ồn cần từ điển thuật ngữ riêng; thời gian lập
+    báo cáo giảm từ 15 xuống 6 phút/báo cáo.
+  - API ghi của hệ thống bảo trì chưa có sẵn, phải làm thêm hạng mục tích hợp sau
+    khi ký NDA.
+  bid_outcome:
+    result: won
+    bid_month: 2025-06
+    contract_model:
+      poc: 準委任
+      mvp: 請負
+      production: 準委任
+    win_reason_vi: Demo trực tiếp trên tablet trong buổi thuyết trình.
+  wbs_file: cs_agent_report_voice_jp_WBS.xlsx
+- id: cs_rag_chem_plant_lost_jp
+  title: Trợ lý tri thức vận hành nhà máy hóa chất, triển khai on-premise (thua thầu,
+    giả lập)
+  industry: Hóa chất
+  market: jp
+  customer_language: ja
+  direction: rag
+  requirement_count: 38
+  factors:
+  - customer_jp
+  - on_premise
+  - many_requirements
+  year: 2025
+  public: false
+  summary: Đề xuất hỏi đáp trên quy trình vận hành và hồ sơ sự cố, triển khai on-premise.
+    Không trúng thầu; giữ lại WBS đề xuất và lý do thua để rút kinh nghiệm.
+  tech:
+  - LLM on-premise
+  - OpenSearch
+  - Python
+  estimated_man_day:
+    poc: 90
+    mvp: 330
+    production: 140
+  bid_outcome:
+    result: lost
+    bid_month: 2025-09
+    contract_model:
+      poc: 準委任
+      mvp: 請負
+      production: 準委任
+    lost_reason_vi: Giá cao hơn đơn vị trúng thầu khoảng 18%; đề xuất PoC 4 tháng
+      trong khi khách muốn 3 tháng; chưa trình bày được case tương tự trong ngành
+      hóa chất.
+  lessons_vi:
+  - Bám đúng thời lượng PoC khách yêu cầu; tách phần on-premise thành phương án tùy
+    chọn có giá riêng.
+  wbs_file: cs_rag_chem_plant_lost_jp_WBS.xlsx

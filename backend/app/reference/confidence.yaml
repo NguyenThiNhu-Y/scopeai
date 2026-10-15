@@ -1,0 +1,64 @@
+# Ngưỡng độ tin cậy từng hồ sơ (thiet_ke_danh_gia.md §5).
+# Có phiên bản, sửa được trong Cài đặt như các bảng chuẩn khác.
+# Mọi con số ở đây là NGƯỠNG do code dùng để phân loại — không phải số do LLM sinh.
+
+version: 1
+
+thresholds:
+  # Truy vết requirement: tỉ lệ requirement có ≥ 1 task lá.
+  traceability:
+    warn_min: 0.80
+    pass_min: 0.95
+
+  # Độ chắc của đánh giá đáp ứng: (△ + × + cần làm rõ) / tổng.
+  coverage_uncertainty:
+    pass_max: 0.15
+    warn_max: 0.30
+
+  # Sai lệch lịch sử: trung vị (thực tế ÷ ước lượng) của case cùng hướng.
+  history_bias:
+    pass_min: 0.90
+    pass_max: 1.10
+
+  # So với dự án tương tự: khoảng thực tế mở rộng ±10%; ngoài ≤ 20% → warn.
+  analog:
+    range_extend_pct: 10
+    warn_outside_pct: 20
+
+  # Kiểm tra lịch: trễ mốc khách ≤ 2 tuần → warn; sai thứ tự giai đoạn hoặc
+  # trễ > 2 tuần → fail.
+  schedule:
+    warn_late_days: 14
+
+  # Đầu vào: đủ 4 (ngân sách, mốc bắt đầu, mốc MVP/Production, file requirement);
+  # thiếu 1–2 → warn; thiếu ≥ 3 hoặc còn câu hỏi chặn chưa trả lời → fail.
+  input_completeness:
+    warn_missing_max: 2
+
+  # Kiểm tra WBS: 4 cờ của CheckEngine.
+  wbs_checks:
+    required_flags:
+      - pm_qa_ok
+      - within_20pct
+      - cycle_free
+      - leaf_within_limit
+
+  # Quy tắc ra mức (thiet_ke_danh_gia.md §5.3) — cố định, có test.
+  level_rules:
+    important_signals:
+      - wbs_checks
+      - schedule_checks
+      - traceability
+    min_fail_for_low: 2
+    min_warn_for_medium: 2
+    max_summary_reasons: 3
+
+  # Tìm case tương tự (thiet_ke_danh_gia.md §5.4).
+  similarity:
+    min_score: 0.5
+    max_cases: 3
+    weights:
+      market: 0.4
+      requirement_count: 0.3
+      language: 0.2
+      keyword: 0.1

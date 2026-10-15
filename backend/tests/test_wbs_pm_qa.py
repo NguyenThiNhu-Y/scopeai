@@ -99,7 +99,9 @@ def test_pipeline_wbs_good_no_warning_single_call(client, mock_llm):
 
     resp = client.get(f"/api/bids/{bid_id}/wbs")
     assert resp.status_code == 200
-    assert resp.json()["check"]["warning"] is not None
+    # Đợt 14 (C2): fixture "good" đã tách task để mọi lá ≤ 10 → WBS đạt 4/4,
+    # không còn cảnh báo (khớp tên test "no_warning").
+    assert resp.json()["check"]["warning"] is None
 
 
 def test_pipeline_wbs_bad_schema_fails_clearly(client, mock_llm):

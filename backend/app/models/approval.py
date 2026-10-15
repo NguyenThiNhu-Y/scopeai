@@ -12,5 +12,8 @@ class Approval(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     reason: Mapped[str | None] = mapped_column(String(1000))
     checks_report: Mapped[list | None] = mapped_column(JSON)
+    # Snapshot độ tin cậy khi duyệt kỹ thuật (thiet_ke_danh_gia.md §5.5):
+    # kết quả confidence + phiên bản case_studies/confidence.yaml.
+    snapshot: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime)

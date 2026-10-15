@@ -2,6 +2,8 @@ import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getBid,
+  getConfidence,
+  getEvaluations,
   getQuotation,
   getSchedule,
   getWbs,
@@ -10,6 +12,7 @@ import {
   updateWbs,
 } from '../api/client';
 import type {
+  ConfidenceOut,
   ContractModel,
   ScheduleResponse,
   ScheduleUpdateRequest,
@@ -20,13 +23,14 @@ import type {
 } from '../api/types';
 import WbsTreeTable from './WbsTreeTable';
 import GanttChart from './GanttChart';
+import AnalogCompare from './AnalogCompare';
 import { CONTRACT_MODEL_LABELS, ROLE_LABELS, formatAmount, formatDate, formatManDay, WORKING_CALENDAR_LABELS } from '../lib/format';
 
 const ROLES = Object.keys(ROLE_LABELS) as WbsRole[];
 const field = 'rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20 disabled:opacity-50';
 
 /** Tab Kế hoạch & báo giá: số liệu và lịch luôn lấy từ backend; FE chỉ điều khiển form. */
-export default function BidPlanTab({ bidId }: { bidId: number }) {
+export default function BidPlanTab({ bidId, onNavigateTab }: { bidId: number; onNavigateTab?: (tab: string) => void }) {
   const queryClient = useQueryClient();
   const bid = useQuery({ queryKey: ['bid', bidId], queryFn: () => getBid(bidId), retry: false });
   // E.2: chỉ gọi quotation/schedule/wbs khi pipeline đã qua bước tương ứng
@@ -35,6 +39,9 @@ export default function BidPlanTab({ bidId }: { bidId: number }) {
   const quotation = useQuery({ queryKey: ['quotation', bidId], queryFn: () => getQuotation(bidId), enabled: advanced, retry: false });
   const schedule = useQuery({ queryKey: ['schedule', bidId], queryFn: () => getSchedule(bidId), enabled: advanced, retry: false });
   const wbs = useQuery({ queryKey: ['wbs', bidId], queryFn: () => getWbs(bidId), enabled: advanced, retry: false });
+  // Đợt 13: độ tin cậy (thẻ/analog/truy vết) + danh sách requirement để map mã → nội dung.
+  const confidence = useQuery({ queryKey: ['confidence', bidId], queryFn: () => getConfidence(bidId), enabled: advanced, retry: false });
+  const evaluations = useQuery({ queryKey: ['evaluations', bidId], queryFn: () => getEvaluations(bidId), enabled: advanced, retry: false });
 
   const [wbsError, setWbsError] = React.useState<string | null>(null);
   const [scheduleError, setScheduleError] = React.useState<string | null>(null);
@@ -55,6 +62,8 @@ export default function BidPlanTab({ bidId }: { bidId: number }) {
         setSavedSchedule(data.recalculated.schedule);
         queryClient.setQueryData(['schedule', bidId], data.recalculated.schedule);
       }
+      // WBS đổi → độ tin cậy (wbs_checks, traceability, analog) đổi → tải lại thẻ.
+      void queryClient.invalidateQueries({ queryKey: ['confidence', bidId] });
       setWbsError(null);
     },
     onError: () => setWbsError('Không lưu được WBS. Kiểm tra dữ liệu rồi thử lại.'),
@@ -64,6 +73,8 @@ export default function BidPlanTab({ bidId }: { bidId: number }) {
     onSuccess: (data) => {
       setSavedSchedule(data);
       queryClient.setQueryData(['schedule', bidId], data);
+      // Lịch đổi → tín hiệu schedule_checks đổi → tải lại độ tin cậy.
+      void queryClient.invalidateQueries({ queryKey: ['confidence', bidId] });
       setScheduleError(null);
     },
     onError: () => setScheduleError('Không tính lại được lịch. Kiểm tra tham số rồi thử lại.'),
@@ -91,6 +102,12 @@ export default function BidPlanTab({ bidId }: { bidId: number }) {
     saveWbs.mutate(changes);
   };
 
+  // Map mã requirement → nội dung để hiện chip/hover và danh sách chưa truy vết.
+  const requirementContents = Object.fromEntries(
+    (evaluations.data?.items ?? []).map((item) => [item.req_code, item.content]),
+  );
+  const availableRequirementCodes = (evaluations.data?.items ?? []).map((item) => item.req_code);
+
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm" aria-label="Kế hoạch nhân sự và lịch">
@@ -102,9 +119,11 @@ export default function BidPlanTab({ bidId }: { bidId: number }) {
         {currentSchedule && <div className="mt-4"><GanttChart tasks={currentSchedule.tasks} startDate={currentSchedule.start_date} endDate={currentSchedule.end_date} taskNames={Object.fromEntries((wbs.data?.items ?? []).map((item) => [item.task_code, item.name_vi]))} breakStart={currentSchedule.go_no_go_start} breakEnd={currentSchedule.go_no_go_end} milestones={[...(currentSchedule.customer_mvp_start ? [{ label: 'MVP khách', date: currentSchedule.customer_mvp_start }] : []), ...(currentSchedule.customer_production_start ? [{ label: 'Production khách', date: currentSchedule.customer_production_start }] : [])]} /></div>}
       </section>
 
+      <AnalogCompare bidId={bidId} enabled={advanced} wbsByPhase={wbs.data?.totals.by_phase} />
+
       <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm" aria-label="Cấu trúc công việc">
         <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">WBS</p><h2 className="mt-1 text-xl font-semibold text-[var(--ink)]">Cấu trúc công việc</h2></div></div>
-        {wbs.data ? <><div className="mt-3 flex items-center justify-between text-sm text-[var(--muted)]"><span>Tổng backend tính: <strong className="text-[var(--ink)]">{wbs.data.totals.man_day} man-day</strong></span><span>{wbs.data.check.within_20pct ? 'Trong khoảng tham chiếu' : 'Cần rà soát effort'}</span></div>{wbsError && <p role="alert" className="mt-3 text-sm text-[var(--danger)]">{wbsError}</p>}<div className="mt-4"><WbsTreeTable items={wbs.data.items} saving={saveWbs.isPending} onSaveChanges={handleWbsSave} /></div><p className="mt-3 text-xs text-[var(--muted)]">Sửa trực tiếp trong dòng; dùng ＋ Thêm task ở cuối mỗi nhóm để thêm task con, ＋ Thêm nhóm cấp 1 để tạo nhóm mới. Lưu xong tổng man-day và lịch tự tính lại.</p></> : <Empty label="Chưa có danh sách công việc." pending={wbs.isPending} />}
+        {wbs.data ? <><div className="mt-3 flex items-center justify-between text-sm text-[var(--muted)]"><span>Tổng backend tính: <strong className="text-[var(--ink)]">{wbs.data.totals.man_day} man-day</strong></span><span>{wbs.data.check.within_20pct ? 'Trong khoảng tham chiếu' : 'Cần rà soát effort'}</span></div>{wbsError && <p role="alert" className="mt-3 text-sm text-[var(--danger)]">{wbsError}</p>}<div className="mt-4"><WbsTreeTable items={wbs.data.items} saving={saveWbs.isPending} onSaveChanges={handleWbsSave} requirementContents={requirementContents} availableRequirementCodes={availableRequirementCodes} /></div><TraceabilityLine confidence={confidence.data} requirementContents={requirementContents} onNavigateCoverage={() => onNavigateTab?.('coverage')} /><p className="mt-3 text-xs text-[var(--muted)]">Sửa trực tiếp trong dòng; dùng ＋ Thêm task ở cuối mỗi nhóm để thêm task con, ＋ Thêm nhóm cấp 1 để tạo nhóm mới. Lưu xong tổng man-day và lịch tự tính lại.</p></> : <Empty label="Chưa có danh sách công việc." pending={wbs.isPending} />}
       </section>
 
       <QuotationSection quotation={quotation.data} locked={locked} pending={saveQuotation.isPending} onSave={(payload) => saveQuotation.mutate(payload)} />
@@ -113,6 +132,49 @@ export default function BidPlanTab({ bidId }: { bidId: number }) {
 }
 
 interface ScheduleDraft { startDate: string; bufferDays: number; calendar: ScheduleUpdateRequest['working_calendar']; goNoGoGap: number; }
+
+/**
+ * Dòng "Truy vết: x/y requirement có task" + danh sách requirement chưa có task
+ * (thiet_ke_danh_gia.md §7). Dữ liệu từ tín hiệu traceability của confidence —
+ * bấm vào mã chưa truy vết chuyển sang tab Đáp ứng.
+ */
+function TraceabilityLine({
+  confidence,
+  requirementContents,
+  onNavigateCoverage,
+}: {
+  confidence?: ConfidenceOut;
+  requirementContents: Record<string, string>;
+  onNavigateCoverage: () => void;
+}) {
+  const trace = confidence?.signals.find((signal) => signal.key === 'traceability');
+  const data = trace?.data as { covered?: number; total?: number; uncovered?: string[] } | undefined;
+  if (!trace || !data || !data.total) return null;
+  const uncovered = data.uncovered ?? [];
+  return (
+    <div className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--page)] p-3 text-sm">
+      <p className="text-[var(--ink)]">
+        Truy vết: <strong className="font-semibold">{data.covered}/{data.total}</strong> requirement có task
+      </p>
+      {uncovered.length > 0 && (
+        <div className="mt-2">
+          <p className="text-xs text-[var(--muted)]">Requirement chưa có task:</p>
+          <ul className="mt-1 space-y-1">
+            {uncovered.map((code) => (
+              <li key={code}>
+                <button type="button" onClick={onNavigateCoverage} className="font-mono text-xs font-semibold text-[var(--brand)] hover:underline">
+                  {code}
+                </button>
+                <span className="ml-2 text-xs text-[var(--muted)]">{requirementContents[code] ?? ''}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ScheduleControls({ schedule, staff, setStaff, disabled, error, onSave }: { schedule: ScheduleResponse; staff: TeamAllocation; setStaff: React.Dispatch<React.SetStateAction<TeamAllocation>>; disabled: boolean; error: string | null; onSave: (draft: ScheduleDraft) => void }) {
   const [startDate, setStartDate] = React.useState(schedule.start_date);
   const [bufferDays, setBufferDays] = React.useState(String(schedule.buffer_days));

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import type { TaskDate, WbsPhase } from '../api/types';
 import { PHASE_LABELS, ROLE_LABELS } from '../lib/format';
 
@@ -96,59 +96,94 @@ export default function GanttChart({ tasks, startDate, endDate, taskNames = {}, 
         Lịch theo tuần; ngày từng task do backend tính theo số người/vai trò, nghỉ lễ và buffer.
       </p>
 
-      <div className="mt-4 overflow-x-auto">
-         <div style={{ minWidth: `${Math.max(range.totalWeeks * WEEK_WIDTH, 640)}px` }}>
-           {/* Trục tuần */}
-           <div className="flex border-b border-slate-200">
-             <div className="w-44 shrink-0" />
-             <div className="flex flex-1">
-               {Array.from({ length: range.totalWeeks }, (_, i) => {
-                 const date = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate() + i * 7);
-                 const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                 return (
-                   <div key={iso} className="shrink-0 border-r border-slate-100 px-2 py-2 text-center text-[10px] text-slate-500" style={{ width: WEEK_WIDTH }}>
-                     Tuần {i + 1}<span className="block text-[9px] text-slate-400">{date.getDate()}/{date.getMonth() + 1}</span>
-                   </div>
-                 );
-              })}
-            </div>
+      <div
+        className="mt-4 max-h-[480px] overflow-auto rounded-lg border border-slate-200"
+        role="region"
+        aria-label="Biểu đồ Gantt — cuộn ngang dọc"
+        tabIndex={0}
+      >
+        <div
+          className="grid"
+          style={{
+            minWidth: `${176 + Math.max(range.totalWeeks * WEEK_WIDTH, 556)}px`,
+            gridTemplateColumns: `176px minmax(0, 1fr)`,
+          }}
+        >
+          {/* Ô Task (góc) — cố định cả 2 chiều, trùm lên trục tuần + dòng ngày */}
+          <div className="sticky left-0 top-0 z-40 row-span-2 flex items-center border-b border-r border-slate-200 bg-white px-3">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Task</span>
           </div>
 
-          {/* Các thanh task */}
-          <div className="divide-y divide-slate-100">
-            {tasks.map((task) => {
-              const startIdx = Math.max(0, diffDays(range.start, parseDate(task.start_date)));
-              const endIdx = Math.min(range.totalDays - 1, diffDays(range.start, parseDate(task.end_date)));
-              const left = (startIdx / range.totalDays) * 100;
-              const width = Math.max(((endIdx - startIdx + 1) / range.totalDays) * 100, 1.5);
+          {/* Trục tuần — cố định trên cùng khi cuộn dọc */}
+          <div className="sticky top-0 z-30 flex h-9 border-b border-slate-200 bg-white">
+            {Array.from({ length: range.totalWeeks }, (_, i) => {
+              const date = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate() + i * 7);
+              const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
               return (
-                <div key={task.task_code} className="flex items-center">
-                  <div className="w-44 shrink-0 py-1 pr-2">
-                   <p className="truncate text-xs font-medium text-slate-700" title={taskNames[task.task_code] ?? task.task_code}>{taskNames[task.task_code] ?? task.task_code}</p>
-                    <p className="truncate text-[11px] text-slate-500">
-                       {ROLE_LABELS[task.role] ?? 'Vai trò chưa xác định'} · {task.man_day} man-day
-                    </p>
-                  </div>
-                  <div className="relative h-8 flex-1">
-                     {breakSegment && <div className="absolute inset-y-0 z-10 border-x-2 border-dashed border-amber-400 bg-amber-100/60" style={{ left: `${breakSegment.left}%`, width: `${breakSegment.width}%` }} title="Khoảng nghỉ go/no-go" />}
-                     {milestoneMarkers.map((marker) => <div key={marker.label} className="absolute inset-y-0 z-20 border-l-2 border-dotted border-blue-500" style={{ left: `${(marker.index / range.totalDays) * 100}%` }} title={`${marker.label}: ${formatShortDate(marker.date)}`} />)}
-                    {weekendSegments.map((seg, idx) => (
-                      <div
-                        key={idx}
-                        className="absolute inset-y-0 bg-slate-100/70"
-                        style={{ left: `${seg.left}%`, width: `${seg.width}%` }}
-                      />
-                    ))}
-                    <div
-                      className={`absolute inset-y-1.5 rounded-md ${PHASE_BAR_COLOR[task.phase]} shadow-sm`}
-                      style={{ left: `${left}%`, width: `${width}%`, minWidth: '6px' }}
-                      title={`${PHASE_LABELS[task.phase]} · ${formatShortDate(task.start_date)} → ${formatShortDate(task.end_date)}`}
-                    />
-                  </div>
+                <div key={iso} className="flex shrink-0 items-center justify-center border-r border-slate-100 px-2 text-center text-[10px] text-slate-500" style={{ width: WEEK_WIDTH }}>
+                  <span>
+                    Tuần {i + 1}<span className="block text-[9px] text-slate-400">{date.getDate()}/{date.getMonth() + 1}</span>
+                  </span>
                 </div>
               );
             })}
           </div>
+
+          {/* Dòng ngày tháng — cố định dưới trục tuần */}
+          <div className="sticky top-9 z-30 flex h-6 border-b border-slate-200 bg-white">
+            {Array.from({ length: range.totalDays }, (_, i) => {
+              const date = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate() + i);
+              const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+              const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+              const isFirstOfMonth = date.getDate() === 1;
+              return (
+                <div
+                  key={iso}
+                  className={`flex shrink-0 items-center justify-center border-r border-slate-100 text-[9px] leading-none ${isWeekend ? 'bg-slate-100/70' : ''}`}
+                  style={{ width: WEEK_WIDTH / 7 }}
+                  title={iso}
+                >
+                  <span className={isFirstOfMonth ? 'font-semibold text-slate-700' : 'text-slate-400'}>
+                    {isFirstOfMonth ? `${date.getDate()}/${date.getMonth() + 1}` : date.getDate()}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Các hàng task — cột tên cố định bên trái khi cuộn ngang */}
+          {tasks.map((task) => {
+            const startIdx = Math.max(0, diffDays(range.start, parseDate(task.start_date)));
+            const endIdx = Math.min(range.totalDays - 1, diffDays(range.start, parseDate(task.end_date)));
+            const left = (startIdx / range.totalDays) * 100;
+            const width = Math.max(((endIdx - startIdx + 1) / range.totalDays) * 100, 1.5);
+            return (
+              <Fragment key={task.task_code}>
+                <div className="sticky left-0 z-30 border-b border-r border-slate-100 bg-white py-1 pl-3 pr-2">
+                  <p className="truncate text-xs font-medium text-slate-700" title={taskNames[task.task_code] ?? task.task_code}>{taskNames[task.task_code] ?? task.task_code}</p>
+                  <p className="truncate text-[11px] text-slate-500">
+                    {ROLE_LABELS[task.role] ?? 'Vai trò chưa xác định'} · {task.man_day} man-day
+                  </p>
+                </div>
+                <div className="relative h-full min-h-8">
+                  {breakSegment && <div className="absolute inset-y-0 z-10 border-x-2 border-dashed border-amber-400 bg-amber-100/60" style={{ left: `${breakSegment.left}%`, width: `${breakSegment.width}%` }} title="Khoảng nghỉ go/no-go" />}
+                  {milestoneMarkers.map((marker) => <div key={marker.label} className="absolute inset-y-0 z-20 border-l-2 border-dotted border-blue-500" style={{ left: `${(marker.index / range.totalDays) * 100}%` }} title={`${marker.label}: ${formatShortDate(marker.date)}`} />)}
+                  {weekendSegments.map((seg, idx) => (
+                    <div
+                      key={idx}
+                      className="absolute inset-y-0 bg-slate-100/70"
+                      style={{ left: `${seg.left}%`, width: `${seg.width}%` }}
+                    />
+                  ))}
+                  <div
+                    className={`absolute inset-y-1.5 rounded-md ${PHASE_BAR_COLOR[task.phase]} shadow-sm`}
+                    style={{ left: `${left}%`, width: `${width}%`, minWidth: '6px' }}
+                    title={`${PHASE_LABELS[task.phase]} · ${formatShortDate(task.start_date)} → ${formatShortDate(task.end_date)}`}
+                  />
+                </div>
+              </Fragment>
+            );
+          })}
         </div>
       </div>
 

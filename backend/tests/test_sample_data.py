@@ -62,3 +62,40 @@ def test_sample_no_body_defaults_ja(client):
     resp = client.post("/api/bids/sample")
     assert resp.status_code == 201
     assert resp.json()["customer_language"] == "ja"
+
+
+def test_load_tokai_minato_sample_creates_four_real_attachments(client):
+    """Bộ Tokai dùng 4 tệp thật trong real/ với đúng loại (A1 Đợt 14).
+
+    PDF là tài liệu (rfp), không phải sample_data — tránh lỗi D-1 (PDF bị
+    đưa vào parser Excel).
+    """
+    resp = client.post("/api/bids/sample", json={"sample_key": "tokai_minato"})
+    assert resp.status_code == 201, resp.text
+    data = resp.json()
+    assert data["status"] == "draft"
+    assert data["customer_language"] == "ja"
+    assert "架空" in data["customer_name"]
+
+    from app.core import db
+    from app.models import Attachment
+
+    session = db.SessionLocal()
+    try:
+        attachments = (
+            session.query(Attachment)
+            .filter_by(bid_id=data["id"])
+            .order_by(Attachment.id)
+            .all()
+        )
+        assert len(attachments) == 4
+        types = sorted(a.file_type for a in attachments)
+        assert types == ["requirement", "rfp", "rfp", "sample_data"]
+        # 4 tệp đọc được (parse_status ok sau POST /parse).
+        resp = client.post(f"/api/bids/{data['id']}/parse")
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["requirements"]["count"] == 41
+        assert all(a["status"] == "ok" for a in body["attachments"])
+    finally:
+        session.close()

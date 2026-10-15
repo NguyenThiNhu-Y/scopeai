@@ -17,6 +17,7 @@ class WbsItemOut(BaseModel):
     weight: int | None
     man_day: float | None
     depends_on: list[str]
+    requirement_codes: list[str] = Field(default_factory=list)
     sort_order: int
     is_leaf: bool
 
@@ -66,6 +67,8 @@ class WbsTaskIn(BaseModel):
     weight: int | None = Field(default=None, ge=1, le=100)
     man_day: float | None = Field(default=None, ge=0, le=10)
     depends_on: list[str] = Field(default_factory=list, max_length=5)
+    # Truy vết requirement (thiet_ke_danh_gia.md §4) — chỉ task lá, tối đa 8 mã.
+    requirement_codes: list[str] = Field(default_factory=list, max_length=8)
 
 
 class WbsChangeIn(BaseModel):

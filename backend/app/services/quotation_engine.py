@@ -112,6 +112,8 @@ def quotation_to_out(row, bid):
     currency = bid.display_currency or "VND"
     budget = None
     budget_value = None
+    scope = "total"
+    comparison_total = None
     if bid.budget_amount is not None:
         budget_currency = bid.budget_currency or currency
         budget_value = float(bid.budget_amount)
@@ -122,7 +124,14 @@ def quotation_to_out(row, bid):
             target = next((x for x in card["fx"] if x["pair"] == f"VND/{currency}"), None)
             if fx is not None and target is not None:
                 budget_value = budget_value / float(fx["value"]) * float(target["value"])
-        difference = round(float(row.totals["grand_total"]) - budget_value, 2)
+        scope = getattr(bid, "budget_scope", None) or "total"
+        comparison_total = float(row.totals["grand_total"])
+        if scope == "poc":
+            # Ngân sách chỉ cho PoC (vd "PoC：1,500万円以内") → đối chiếu giá PoC.
+            comparison_total = float(
+                ((row.totals.get("by_phase") or {}).get("poc")) or comparison_total
+            )
+        difference = round(comparison_total - budget_value, 2)
         budget = {"amount": bid.budget_amount, "currency": budget_currency, "difference": difference}
     snapshot_version = 1
     if row.reference_snapshot_id:
@@ -133,13 +142,14 @@ def quotation_to_out(row, bid):
     session = object_session(row)
     schedule = session.execute(select(Schedule).where(Schedule.bid_id == bid.id).order_by(Schedule.id.desc())).scalars().first() if session else None
     if budget is not None:
-        budget["scope"] = "bid_budget"
+        budget["scope"] = "poc" if scope == "poc" else "bid_budget"
+        budget["scope_label_vi"] = "Ngân sách PoC" if scope == "poc" else "Ngân sách khách"
         budget["difference_percent"] = (
             round(budget["difference"] / float(budget_value) * 100, 2)
             if budget_value
             else None
         )
-        pre_adjustment = row.totals.get("pre_adjustment_total")
+        pre_adjustment = comparison_total
         raw_suggestion = (
             round((float(budget_value) / float(pre_adjustment) - 1) * 100, 2)
             if isinstance(budget_value, (int, float))

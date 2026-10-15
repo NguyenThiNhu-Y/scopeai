@@ -4,7 +4,8 @@ const ACTIONS: Array<{ kind: ExportKind; label: string; detail: string }> = [
   { kind: 'docx', label: 'Proposal Word', detail: '.docx' },
   { kind: 'xlsx', label: 'Bảng tính Excel', detail: '.xlsx' },
   { kind: 'pdf', label: 'Proposal PDF', detail: '.pdf' },
-  { kind: 'bundle', label: 'Gói đầy đủ', detail: '.zip · 3 file' },
+  { kind: 'pptx', label: 'Slide PowerPoint', detail: '.pptx · tóm tắt thuyết trình' },
+  { kind: 'bundle', label: 'Gói đầy đủ', detail: '.zip · 4 file' },
   { kind: 'requirements', label: 'Excel requirement', detail: '.xlsx · đã điền đáp ứng' },
 ];
 

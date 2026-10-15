@@ -27,15 +27,25 @@ def is_working_day(day: date, holidays: set[date]) -> bool:
     return day.weekday() < 5 and day not in holidays
 
 
-def next_working_day(day: date, holidays: set[date]) -> date:
+def next_working_day(
+    day: date, holidays: set[date], holidays_applied: list[str] | None = None
+) -> date:
     day += timedelta(days=1)
     while not is_working_day(day, holidays):
+        if holidays_applied is not None and day in holidays:
+            if day.isoformat() not in holidays_applied:
+                holidays_applied.append(day.isoformat())
         day += timedelta(days=1)
     return day
 
 
-def to_working_day(day: date, holidays: set[date]) -> date:
+def to_working_day(
+    day: date, holidays: set[date], holidays_applied: list[str] | None = None
+) -> date:
     while not is_working_day(day, holidays):
+        if holidays_applied is not None and day in holidays:
+            if day.isoformat() not in holidays_applied:
+                holidays_applied.append(day.isoformat())
         day += timedelta(days=1)
     return day
 
@@ -109,6 +119,9 @@ def compute_schedule(
     submission_deadline: date | None = None,
     phase_team_allocation: dict[str, dict[str, int]] | None = None,
     go_no_go_gap_working_days: int = 10,
+    customer_poc_end: date | None = None,
+    customer_mvp_start: date | None = None,
+    customer_production_start: date | None = None,
 ) -> dict:
     """Tính lịch từ WBS (items đã enrich) × headcount + nghỉ lễ + buffer.
 
@@ -132,9 +145,9 @@ def compute_schedule(
     ordered = topo_order(leaves, by_code)
     phase_order = {phase: [t for t in ordered if t["phase"] == phase] for phase in PHASES}
 
-    phase_start = to_working_day(start_date, holiday_set)
-    end_map: dict[str, date] = {}
     holidays_applied: list[str] = []
+    phase_start = to_working_day(start_date, holiday_set, holidays_applied)
+    end_map: dict[str, date] = {}
     tasks_out: list[dict] = []
     by_role: dict[str, dict] = {}
     work_breakdown: dict[str, dict[str, float]] = {}
@@ -146,7 +159,9 @@ def compute_schedule(
         phase_tasks = phase_order[phase]
         if phase == "mvp" and phase_end_by_phase.get("poc"):
             # Khoảng chờ go/no-go: sau khi PoC xong + gap ngày làm việc.
-            go_no_go_start = next_working_day(phase_end_by_phase["poc"], holiday_set)
+            go_no_go_start = next_working_day(
+                phase_end_by_phase["poc"], holiday_set, holidays_applied
+            )
             go_no_go_end = add_working_days(
                 go_no_go_start,
                 go_no_go_gap_working_days,
@@ -154,8 +169,16 @@ def compute_schedule(
                 holidays_applied,
             )
             phase_start = max(phase_start, go_no_go_end)
-        elif phase == "production" and phase_end_by_phase.get("mvp"):
-            phase_start = next_working_day(phase_end_by_phase["mvp"], holiday_set)
+        elif phase == "production"and phase_end_by_phase.get("mvp"):
+            phase_start = next_working_day(
+                phase_end_by_phase["mvp"], holiday_set, holidays_applied
+            )
+
+        # Mốc khách: MVP/Production không được bắt đầu trước mốc khách nêu trong RFP.
+        if phase == "mvp"and customer_mvp_start:
+            phase_start = max(phase_start, customer_mvp_start)
+        elif phase == "production"and customer_production_start:
+            phase_start = max(phase_start, customer_production_start)
 
         # Cursor riêng theo vai trò → các task của các role khác nhau chạy song song.
         role_cursors: dict[str, date] = {}
@@ -172,10 +195,10 @@ def compute_schedule(
             ]
             cursor = role_cursors.get(role, phase_start)
             start = max(cursor, *deps_end) if deps_end else cursor
-            start = to_working_day(max(start, phase_start), holiday_set)
+            start = to_working_day(max(start, phase_start), holiday_set, holidays_applied)
             end = add_working_days(start, duration, holiday_set, holidays_applied)
             end_map[task["task_code"]] = end
-            role_cursors[role] = next_working_day(end, holiday_set)
+            role_cursors[role] = next_working_day(end, holiday_set, holidays_applied)
             if phase_end is None or end > phase_end:
                 phase_end = end
             tasks_out.append(
@@ -205,6 +228,23 @@ def compute_schedule(
 
         if phase_tasks and phase_end is not None:
             phase_end_by_phase[phase] = phase_end
+
+        # PoC theo kế hoạch khách: nếu khách nêu mốc kết thúc PoC (vd Tokai
+        # 2026-12 → 2027-02), PoC dùng đúng khoảng đó — kéo dài task PoC
+        # tới mốc khách để go/no-go bắt đầu sau khi PoC kết thúc theo kế hoạch.
+
+        if phase == "poc"and customer_poc_end and phase_end_by_phase.get("poc") and phase_end_by_phase["poc"] < customer_poc_end:
+            shift_days = (customer_poc_end - phase_end_by_phase["poc"]).days
+            for task in tasks_out:
+                if task["phase"] == "poc":
+                    task["start_date"] = (
+                        date.fromisoformat(task["start_date"]) + timedelta(days=shift_days)
+                    ).isoformat()
+                    task["end_date"] = (
+                        date.fromisoformat(task["end_date"]) + timedelta(days=shift_days)
+                    ).isoformat()
+                    end_map[task["task_code"]] = date.fromisoformat(task["end_date"])
+            phase_end_by_phase["poc"] = customer_poc_end
 
     last_end = max(end_map.values()) if end_map else start_date
     end_date = add_working_days(last_end, buffer_days, holiday_set, holidays_applied)

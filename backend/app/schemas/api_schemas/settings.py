@@ -4,7 +4,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-SettingKey = Literal["effort", "rate_card", "factors", "company", "templates", "standard_content", "case_studies", "bid_no_bid"]
+SettingKey = Literal["effort", "rate_card", "factors", "company", "templates", "standard_content", "case_studies", "bid_no_bid", "confidence"]
 
 
 class SettingSummary(BaseModel):

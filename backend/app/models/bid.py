@@ -62,12 +62,14 @@ class Bid(Base):
     submission_deadline: Mapped[date] = mapped_column(Date, nullable=False)
     customer_schedule_start: Mapped[date | None] = mapped_column(Date, nullable=True)
     customer_schedule_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    customer_poc_end: Mapped[date | None] = mapped_column(Date, nullable=True)
     customer_mvp_start: Mapped[date | None] = mapped_column(Date, nullable=True)
     customer_production_start: Mapped[date | None] = mapped_column(Date, nullable=True)
     customer_language: Mapped[str] = mapped_column(String(10), nullable=False)
     request_content: Mapped[str] = mapped_column(Text, nullable=False)
     budget_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     budget_currency: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    budget_scope: Mapped[str | None] = mapped_column(String(10), nullable=True)
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,

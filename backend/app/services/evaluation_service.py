@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from app.api.errors import pipeline_error
 from app.llm.gateway import complete_with_retry, get_llm_client, LLMSchemaError
+from app.llm.prompts.b3_evaluate import build_evaluation_prompt
 from app.models import Requirement, Evaluation
 from app.schemas.llm_schemas.evaluation import EvaluationBatch
 
@@ -9,11 +10,11 @@ def evaluate(session, bid_id: int, direction: str | None = None, client=None) ->
     client=client or get_llm_client(); warnings=[]; all_codes={r.internal_code for r in requirements}
     for batch_no in range(0,len(requirements),40):
         batch=requirements[batch_no:batch_no+40]; expected={r.internal_code for r in batch}
-        context={"requirements":[{"req_code":r.internal_code,"content":r.content,"priority":r.priority,"category":r.category} for r in batch],"batch_codes":sorted(expected),"solution_direction":direction,"architecture_components":[]}
-        prompt="""Đánh giá từng requirement trong đúng lô hiện tại theo hướng giải pháp và các thành phần kiến trúc.
-Quy ước rating: ◎ = đáp ứng đầy đủ; ○ = đáp ứng với cấu hình chuẩn; △ = cần tùy biến/điều kiện; × = không đáp ứng; cần làm rõ = thiếu thông tin để kết luận.
-note_vi phải là một câu tiếng Việt cụ thể, nêu lý do cho từng rating; không được viết chung chung.
-Chỉ trả req_code, rating, needs_clarification và note_vi."""
+        rows=[{"req_code":r.internal_code,"content":r.content,"priority":r.priority,"category":r.category} for r in batch]
+        context={"requirements":rows,"batch_codes":sorted(expected),"solution_direction":direction,"architecture_components":[]}
+        # Danh sách requirement phải nằm TRONG prompt — provider openai_compat
+        # chỉ gửi prompt, không gửi context (BR-03). PII che tại gateway (BR-06).
+        prompt=build_evaluation_prompt(rows, direction)
         try: output=complete_with_retry(client,EvaluationBatch,prompt,context=context,max_retries=2)
         except LLMSchemaError as exc: raise pipeline_error("Kết quả đánh giá từ AI không hợp lệ sau 2 lần thử",{"error":str(exc)}) from exc
         codes=[x["req_code"] for x in output["batch"]]; missing=expected-set(codes); extra=set(codes)-expected; duplicate={c for c in codes if codes.count(c)>1}

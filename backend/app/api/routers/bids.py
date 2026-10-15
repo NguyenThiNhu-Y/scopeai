@@ -16,8 +16,10 @@ from app.schemas.api_schemas.bid import (
 )
 from app.schemas.api_schemas.sample import SampleIn
 from app.schemas.api_schemas.proposal import DealStageUpdateIn
+from app.schemas.api_schemas.confidence import ConfidenceOut
 from app.models import Changelog
 from app.services import bid_service, sample_service
+from app.services.confidence_service import get_confidence
 
 router = APIRouter(prefix="/bids", tags=["bids"])
 
@@ -30,6 +32,7 @@ def _to_bid_out(bid) -> BidOut:
         submission_deadline=bid.submission_deadline,
         customer_schedule_start=bid.customer_schedule_start,
         customer_schedule_end=bid.customer_schedule_end,
+        customer_poc_end=bid.customer_poc_end,
         customer_mvp_start=bid.customer_mvp_start,
         customer_production_start=bid.customer_production_start,
         customer_language=bid.customer_language,
@@ -37,6 +40,7 @@ def _to_bid_out(bid) -> BidOut:
         locked=bid.locked,
         budget_amount=bid.budget_amount,
         budget_currency=bid.budget_currency,
+        budget_scope=bid.budget_scope,
         created_by=bid.created_by,
         created_at=bid.created_at,
         display_currency=bid.display_currency,
@@ -132,3 +136,13 @@ def update_deal_stage(bid_id: int, body: DealStageUpdateIn, session: Session = D
     session.add(Changelog(bid_id=bid_id, actor=identity.user, action="update_deal_stage", field_changed="deal_stage", old_value=old_stage, new_value=body.deal_stage, note=body.note))
     session.commit()
     return {"bid_id": bid_id, "deal_stage": bid.deal_stage}
+
+
+@router.get("/{bid_id}/confidence", response_model=ConfidenceOut)
+def get_bid_confidence(
+    bid_id: int,
+    session: Session = Depends(get_db),
+    identity: Identity = Depends(get_identity),
+) -> ConfidenceOut:
+    """Độ tin cậy ước lượng từng hồ sơ (thiet_ke_danh_gia.md §5.1)."""
+    return ConfidenceOut(**get_confidence(session, bid_id))

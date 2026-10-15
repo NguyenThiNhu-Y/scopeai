@@ -9,7 +9,7 @@ def test_export_content_disposition_supports_unicode_filename(client, monkeypatc
 
     monkeypatch.setattr(
         "app.api.routers.exports.artifacts",
-        lambda *args: (Bid(), False, {"result": "pass", "issues": []}, {"docx": ("Khách hàng_Dự án_proposal.docx", b"docx")}),
+        lambda *args: (Bid(), False, {"result": "pass", "issues": []}, {"docx": ("Khách hàng_Dự án_proposal.docx", b"docx")}, "2026-10-15"),
     )
     monkeypatch.setattr("app.api.routers.exports.log_export", lambda *args: None)
 

@@ -317,14 +317,18 @@ Soạn văn bản proposal theo ngôn ngữ khách; **mọi con số do code đi
 - Template trung tính (bìa, header/footer, logo placeholder) — code dựng khung, LLM chỉ điền văn bản.
 
 ### Output JSON schema
+**Khóa JSON của `sections` CỐ ĐỊNH bằng tiếng Anh (không dịch); chỉ GIÁ TRỊ viết theo ngôn ngữ khách.** Prompt B6 nêu rõ quy tắc này và kèm ví dụ; schema còn chuẩn hóa bí danh khóa theo ngôn ngữ (ja/vi/en) về khóa chuẩn — lớp phòng thủ khi LLM vẫn dịch khóa (tránh đốt hết lượt retry vì lỗi định dạng khóa).
 ```json
 {
   "sections": {
     "introduction": "string — mở đầu, ngôn ngữ khách",
+    "requirements_understanding": "string — hiểu yêu cầu, ngôn ngữ khách",
     "solution_overview": "string — tổng quan giải pháp, ngôn ngữ khách",
     "approach": "string — cách tiếp cận/triển khai, ngôn ngữ khách",
-    "risks": "string — rủi ro và cách giảm thiểu, ngôn ngữ khách",
-    "conclusion": "string — kết luận, ngôn ngữ khách"
+    "schedule": "string — lịch trình, ngôn ngữ khách",
+    "team": "string — đội ngũ/體制, ngôn ngữ khách",
+    "assumptions_and_scope": "string — giả định và phạm vi ngoài (前提条件・対象外), ngôn ngữ khách",
+    "risks": "string — rủi ro và cách giảm thiểu, ngôn ngữ khách"
   },
   "assumptions_phrased": ["string — diễn đạt từng giả định bằng ngôn ngữ khách"],
   "scope_out_phrased": ["string — diễn đạt từng mục ngoài phạm vi bằng ngôn ngữ khách"]
@@ -334,8 +338,9 @@ Soạn văn bản proposal theo ngôn ngữ khách; **mọi con số do code đi
 ### Validation rules (code)
 | Rule | Hành vi |
 |---|---|
-| Mọi section không rỗng | schema fail → retry |
+| `sections` có đủ đúng 8 khóa chuẩn, mọi section không rỗng | sai → retry ≤ 2 → fail (BR-02); khóa bí danh ja/vi/en được chuẩn hóa về khóa chuẩn trước khi kiểm tra |
 | **Không chứa số tiền/man-day/ngày** — kiểm tra regex số tiền (¥/₫/$ + digits) và từ khóa man-day | phát hiện → retry ≤ 2 → fail (BR-01) |
+| Phải chứa đúng token `{{QUOTATION}}` cho cổng giá | thiếu → retry ≤ 2 → fail (BR-02) |
 | `assumptions_phrased` phải phủ đủ số giả định đã chọn (code so sánh số lượng) | thiếu → retry → cảnh báo |
 | `scope_out_phrased` phải phủ đủ requirement ×/△ + mục ngoài phạm vi | thiếu → retry → cảnh báo |
 

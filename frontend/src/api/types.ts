@@ -417,7 +417,7 @@ export interface EmailDraft {
 // M2 — Hồ sơ mẫu (Module A — sample, §3.7)
 // ---------------------------------------------------------------------------
 
-export type SampleKey = 'ja_email' | 'vi_email';
+export type SampleKey = 'ja_email' | 'vi_email' | 'tokai_minato';
 
 export interface SamplePreview {
   sample_key: SampleKey;
@@ -459,6 +459,8 @@ export interface WbsItem {
   /** Nhóm/task cha = Σ con (backend tính); lá ≤ 10. */
   man_day: number | null;
   depends_on: string[];
+  /** Truy vết requirement (thiet_ke_danh_gia.md §4) — chỉ task lá, tối đa 8 mã. */
+  requirement_codes: string[];
   sort_order: number;
   is_leaf: boolean;
 }
@@ -515,6 +517,7 @@ export type WbsChange =
         man_day?: number | null;
         weight?: number | null;
         depends_on?: string[];
+        requirement_codes?: string[];
       };
     }
   | {
@@ -527,6 +530,7 @@ export type WbsChange =
         role: WbsRole | null;
         man_day: number | null;
         depends_on: string[];
+        requirement_codes: string[];
         sort_order: number;
       }>;
     }
@@ -682,6 +686,8 @@ export interface QuotationResponse {
     difference: number | null;
     difference_percent?: number | null;
     adjustment_suggestion_percent?: number | null;
+    scope?: string;
+    scope_label_vi?: string;
   } | null;
   payment_milestones: PaymentMilestone[];
   price_to_win_percent?: number;
@@ -751,7 +757,7 @@ export interface ProposalVersion {
 // ---------------------------------------------------------------------------
 // M7 — Xuất hồ sơ
 // ---------------------------------------------------------------------------
-export type ExportKind = 'docx' | 'xlsx' | 'pdf' | 'bundle' | 'requirements';
+export type ExportKind = 'docx' | 'xlsx' | 'pdf' | 'pptx' | 'bundle' | 'requirements';
 
 export interface JaCheckIssue {
   severity: 'warning';
@@ -772,7 +778,7 @@ export interface ExportDownload {
   jaCheck: JaCheckResult | null;
 }
 
-export type SettingKey = 'company' | 'templates' | 'standard_content' | 'case_studies' | 'bid_no_bid' | 'effort' | 'rate_card' | 'factors';
+export type SettingKey = 'company' | 'templates' | 'standard_content' | 'case_studies' | 'bid_no_bid' | 'effort' | 'rate_card' | 'factors' | 'confidence';
 export interface SettingSummary {
   key: SettingKey;
   source: 'repo' | 'db';
@@ -834,4 +840,123 @@ export interface ApiErrorEnvelope {
     message?: string;
     details?: ApiErrorDetails;
   };
+}
+
+// ---------------------------------------------------------------------------
+// Đợt 12/13 — Độ tin cậy ước lượng (thiet_ke_danh_gia.md §5.1)
+// ---------------------------------------------------------------------------
+
+export type ConfidenceLevel = 'high' | 'medium' | 'low';
+export type SignalStatus = 'pass' | 'warn' | 'fail' | 'na';
+
+/** ConfidenceSignal — một tín hiệu độ tin cậy (§5.2). */
+export interface ConfidenceSignal {
+  key: string;
+  label_vi: string;
+  status: SignalStatus;
+  detail_vi: string;
+  data: Record<string, unknown>;
+}
+
+/** AnalogCase — một case tương tự trong analog (§5.4). */
+export interface AnalogCase {
+  id: string;
+  title: string;
+  similarity: number;
+  direction?: string | null;
+  market?: string | null;
+  requirement_count?: number | null;
+  actual_man_day?: Record<string, number> | null;
+  actual_total: number;
+  actual_duration_weeks?: Record<string, number | string> | null;
+}
+
+/** HistoryBiasOut — sai lệch lịch sử (§5.2). */
+export interface HistoryBiasOut {
+  direction: 'none' | 'above' | 'below' | null;
+  median_actual_over_estimate: number | null;
+  case_count: number;
+}
+
+/** AnalogOut — so với dự án tương tự (§5.1). */
+export interface AnalogOut {
+  cases: AnalogCase[];
+  actual_total_range: number[];
+  estimate_total: number | null;
+  effort_midpoint: number | null;
+  position: 'below' | 'inside' | 'above' | 'insufficient';
+  history_bias: HistoryBiasOut;
+}
+
+/** ConfidenceOut — GET /api/bids/{id}/confidence (§5.1). */
+export interface ConfidenceOut {
+  level: ConfidenceLevel;
+  level_label_vi: string;
+  summary_vi: string;
+  signals: ConfidenceSignal[];
+  analog: AnalogOut;
+  thresholds_version: number;
+  case_studies_version: number;
+}
+
+// ---------------------------------------------------------------------------
+// Đợt 13 — C: bản ghi duyệt kèm snapshot độ tin cậy (thiet_ke_danh_gia.md §5.5)
+// ---------------------------------------------------------------------------
+
+/** ApprovalRecord — một bản ghi duyệt từ GET /api/bids/{id}/approvals. */
+export interface ApprovalRecord {
+  id: number;
+  kind: 'tech' | 'price';
+  status: 'approved' | 'rejected';
+  approver: string;
+  reason: string | null;
+  decided_at: string;
+  /** Snapshot độ tin cậy lúc duyệt kỹ thuật (§5.5) — có thể null với bản ghi cũ. */
+  snapshot: {
+    confidence?: ConfidenceOut | null;
+    case_studies_version?: number | null;
+    confidence_thresholds_version?: number | null;
+  } | null;
+}
+
+export interface ApprovalsResponse {
+  items: ApprovalRecord[];
+}
+
+// ---------------------------------------------------------------------------
+// Đợt 13 — D: nhập case study (thiet_ke_danh_gia.md §3.3)
+// ---------------------------------------------------------------------------
+
+export interface CaseStudyImportPreview {
+  mode: 'preview';
+  total: number;
+  valid_count: number;
+  error_count: number;
+  valid: Array<Record<string, unknown>>;
+  errors: string[];
+}
+
+export interface CaseStudyImportSave {
+  mode: 'save';
+  total: number;
+  valid_count: number;
+  error_count: number;
+  saved: number;
+  version: number;
+  errors: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Đợt 13 — E: báo cáo đánh giá hệ thống (thiet_ke_danh_gia.md §6.4)
+// ---------------------------------------------------------------------------
+
+export interface EvalReport {
+  provider: string;
+  model: string;
+  started_at: string;
+  repeat: number;
+  case_ids: string[];
+  per_case: Record<string, Array<Record<string, unknown>>>;
+  summary: Record<string, number>;
+  seconds: number;
 }

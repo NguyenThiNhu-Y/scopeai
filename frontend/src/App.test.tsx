@@ -8,7 +8,9 @@ import BidDetailPage from './pages/BidDetailPage';
 import WbsPage from './pages/WbsPage';
 import SchedulePage from './pages/SchedulePage';
 import BidPlanTab from './components/BidPlanTab';
+import ConfidenceCard from './components/ConfidenceCard';
 import SettingsPage from './pages/SettingsPage';
+import ApprovalsPage from './pages/ApprovalsPage';
 import ScheduleForm from './components/ScheduleForm';
 import {
   getQuotation,
@@ -22,6 +24,14 @@ import {
   getWbs,
   listBids,
   getSettings,
+  getConfidence,
+  getApprovals,
+  getEffort,
+  getEvaluations,
+  getHistory,
+  getBidQualification,
+  listProposalVersions,
+  importCaseStudies,
 } from './api/client';
 import type {
   BidDetail,
@@ -60,6 +70,15 @@ vi.mock('./api/client', async (importOriginal) => {
     getQuotation: vi.fn(),
     updateSchedule: vi.fn(),
     rerunPipelineFromWbs: vi.fn(),
+    getConfidence: vi.fn(),
+    getApprovals: vi.fn(),
+    getEffort: vi.fn(),
+    getEvaluations: vi.fn(),
+    getHistory: vi.fn(),
+    getBidQualification: vi.fn(),
+    listProposalVersions: vi.fn(),
+    importCaseStudies: vi.fn(),
+    getEvalReportLatest: vi.fn(),
   };
 });
 
@@ -79,6 +98,14 @@ const mockedGetWbs = vi.mocked(getWbs);
 const mockedGetSchedule = vi.mocked(getSchedule);
 const mockedGetSettings = vi.mocked(getSettings);
 const mockedGetQuotation = vi.mocked(getQuotation);
+const mockedGetConfidence = vi.mocked(getConfidence);
+const mockedGetApprovals = vi.mocked(getApprovals);
+const mockedGetEffort = vi.mocked(getEffort);
+const mockedGetEvaluations = vi.mocked(getEvaluations);
+const mockedGetHistory = vi.mocked(getHistory);
+const mockedGetBidQualification = vi.mocked(getBidQualification);
+const mockedListProposalVersions = vi.mocked(listProposalVersions);
+const mockedImportCaseStudies = vi.mocked(importCaseStudies);
 
 const HEALTH_OK: HealthResponse = {
   status: 'ok',
@@ -354,6 +381,7 @@ const WBS: WbsResponse = {
       weight: null,
       man_day: 8.0,
       depends_on: [],
+      requirement_codes: [],
       sort_order: 1,
       is_leaf: false,
     },
@@ -367,6 +395,7 @@ const WBS: WbsResponse = {
       weight: null,
       man_day: 5.0,
       depends_on: [],
+      requirement_codes: [],
       sort_order: 1,
       is_leaf: false,
     },
@@ -380,6 +409,7 @@ const WBS: WbsResponse = {
       weight: 20,
       man_day: 3.0,
       depends_on: [],
+      requirement_codes: ['FR-001', 'FR-002', 'FR-003', 'FR-004'],
       sort_order: 1,
       is_leaf: true,
     },
@@ -431,6 +461,105 @@ const SCHEDULE: ScheduleResponse = {
   trace: { formula: 'end = start + Σ(ceil(man_day ÷ headcount)) theo phase + buffer' },
 };
 
+const CONFIDENCE_LOW: Awaited<ReturnType<typeof getConfidence>> = {
+  level: 'low',
+  level_label_vi: 'Thấp',
+  summary_vi: 'Cảnh báo: Kiểm tra WBS: Thiếu 1 kiểm tra WBS: leaf_within_limit; Truy vết requirement: 34/36 requirement có task',
+  signals: [
+    { key: 'input_completeness', label_vi: 'Đầu vào', status: 'pass', detail_vi: 'Đủ 4 mục đầu vào, không còn câu hỏi chặn', data: {} },
+    { key: 'wbs_checks', label_vi: 'Kiểm tra WBS', status: 'fail', detail_vi: 'Thiếu 1 kiểm tra WBS: leaf_within_limit', data: {} },
+    { key: 'schedule_checks', label_vi: 'Kiểm tra lịch', status: 'pass', detail_vi: 'Lịch đạt', data: {} },
+    { key: 'traceability', label_vi: 'Truy vết requirement', status: 'warn', detail_vi: '34/36 requirement có task', data: { covered: 34, total: 36, uncovered: ['FR-019', 'FR-020'] } },
+    { key: 'coverage_uncertainty', label_vi: 'Độ chắc của đánh giá đáp ứng', status: 'pass', detail_vi: '2/36 đánh giá chưa chắc chắn', data: {} },
+    { key: 'analog', label_vi: 'So với dự án tương tự', status: 'warn', detail_vi: 'Tổng WBS 210.0 ngoài khoảng thực tế [235.0, 266.0]', data: {} },
+    { key: 'history_bias', label_vi: 'Sai lệch lịch sử', status: 'pass', detail_vi: 'Trung vị thực tế/ước lượng 1.07', data: {} },
+  ],
+  analog: {
+    cases: [
+      { id: 'cs_none_crm_jp', title: 'Hệ thống CRM cho công ty thương mại Nhật (giả lập)', similarity: 0.92, direction: 'none', market: 'jp', requirement_count: 34, actual_man_day: { poc: 31, mvp: 142, production: 62 }, actual_total: 235.0, actual_duration_weeks: { poc: 4, go_no_go: 2, mvp: 14, production: 7 } },
+      { id: 'cs_none_booking_jp', title: 'Hệ thống đặt lịch bảo trì thiết bị cho khách Nhật', similarity: 0.88, direction: 'none', market: 'jp', requirement_count: 41, actual_man_day: { poc: 38, mvp: 160, production: 68 }, actual_total: 266.0, actual_duration_weeks: { poc: 4, go_no_go: 2, mvp: 16, production: 8 } },
+    ],
+    actual_total_range: [235.0, 266.0],
+    estimate_total: 210.0,
+    effort_midpoint: 210.0,
+    position: 'below',
+    history_bias: { direction: 'none', median_actual_over_estimate: 1.07, case_count: 3 },
+  },
+  thresholds_version: 1,
+  case_studies_version: 1,
+};
+
+const EFFORT = {
+  direction: 'none',
+  factors: [],
+  factor_product: 1,
+  cap: 1,
+  by_phase: { poc: { min: 10, max: 20 }, mvp: { min: 100, max: 150 }, production: { min: 50, max: 80 } },
+  midpoint_total: 210,
+  trace: { table_version: 1, source: 'code', formula: 'x' },
+} as unknown as Awaited<ReturnType<typeof getEffort>>;
+
+const EVALUATIONS = {
+  solution_direction: { direction: 'none', reason_vi: 'test' },
+  warnings: [],
+  items: [],
+  stats: {},
+} as unknown as Awaited<ReturnType<typeof getEvaluations>>;
+
+const QUALIFICATION = {
+  bid_id: 1,
+  criteria: [],
+  suggestions: [],
+  decision: null,
+  confirmer: null,
+  confirmed_at: null,
+} as unknown as Awaited<ReturnType<typeof getBidQualification>>;
+
+const QUOTATION_MINIMAL = {
+  contract_model: 'fixed_price',
+  contingency_percent: 10,
+  currency: 'JPY',
+  fx_rate: { value: 1, date: '2026-10-01', pair: 'VND/JPY' },
+  valid_until: '2026-11-01',
+  tax_mode: 'tax_excluded',
+  totals: {
+    by_role: {},
+    overhead: {},
+    contingency_amount: 0,
+    operating_cost: 0,
+    subtotal: 0,
+    tax_excluded: 0,
+    tax_included: 0,
+    grand_total: 1000,
+  },
+  payment_milestones: [],
+  trace: { formula: 'code', rate_card_version: 1, reference_snapshot_id: 1, rounding: '1' },
+} as unknown as Awaited<ReturnType<typeof getQuotation>>;
+
+function mockApprovalsPageQueries(status: BidDetail['status']) {
+  mockedGetBid.mockResolvedValue({ ...DETAIL, status, locked: false } as BidDetail);
+  mockedGetConfidence.mockResolvedValue(CONFIDENCE_LOW);
+  mockedGetApprovals.mockResolvedValue({ items: [] });
+  mockedGetEffort.mockResolvedValue(EFFORT);
+  mockedGetEvaluations.mockResolvedValue(EVALUATIONS);
+  mockedGetSchedule.mockResolvedValue(SCHEDULE);
+  mockedGetQuotation.mockResolvedValue(QUOTATION_MINIMAL);
+  mockedGetQuestions.mockResolvedValue(QUESTIONS);
+  mockedGetHistory.mockResolvedValue({ items: [], total: 0 });
+  mockedGetBidQualification.mockResolvedValue(QUALIFICATION);
+  mockedListProposalVersions.mockResolvedValue([]);
+}
+
+function renderApprovalsPage() {
+  return renderWithProviders(
+    <MemoryRouter initialEntries={['/bids/1/approvals']}>
+      <Routes>
+        <Route path="/bids/:id/approvals" element={<ApprovalsPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe('App — M4 smoke test', () => {
   beforeEach(() => {
     mockedGetWbs.mockReset();
@@ -449,7 +578,8 @@ describe('App — M4 smoke test', () => {
     );
 
     expect(await screen.findByText('WBS 3 cấp')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Phỏng vấn khách hàng')).toBeInTheDocument();
+    // WbsTreeTable nạp draft qua useEffect — dùng findByDisplayValue để chờ dòng render.
+    expect(await screen.findByDisplayValue('Phỏng vấn khách hàng')).toBeInTheDocument();
     expect(screen.getByText('Tổng effort trong ±20% midpoint')).toBeInTheDocument();
     expect(screen.getByText('Mỗi phase có PM + QA')).toBeInTheDocument();
   });
@@ -536,5 +666,156 @@ describe('Đợt 7 — frontend P0 contracts', () => {
   it('hiển thị trường Ngày bắt đầu dự án', () => {
     renderWithProviders(<ScheduleForm bidId={1} initial={SCHEDULE} onSaved={() => undefined} />);
     expect(screen.getByLabelText('Ngày bắt đầu dự án *')).toBeInTheDocument();
+  });
+});
+
+describe('Đợt 13 — thẻ Độ tin cậy ước lượng (A)', () => {
+  beforeEach(() => {
+    mockedGetConfidence.mockReset();
+  });
+
+  it('render huy hiệu mức Thấp + tối đa 3 lý do (fail trước warn) + link Xem chi tiết', async () => {
+    mockedGetConfidence.mockResolvedValue(CONFIDENCE_LOW);
+    const onViewDetail = vi.fn();
+    renderWithProviders(<ConfidenceCard bidId={1} enabled onViewDetail={onViewDetail} />);
+
+    expect(await screen.findByText('Độ tin cậy ước lượng')).toBeInTheDocument();
+    expect(await screen.findByText('Thấp')).toBeInTheDocument();
+    // 3 lý do: 1 fail (Kiểm tra WBS) + 2 warn (Truy vết, So với dự án tương tự).
+    expect(screen.getByText(/Kiểm tra WBS:/)).toBeInTheDocument();
+    expect(screen.getByText(/Truy vết requirement:/)).toBeInTheDocument();
+    expect(screen.getByText(/So với dự án tương tự:/)).toBeInTheDocument();
+    // Không hiện lý do thứ 4 (history_bias pass, coverage pass) và không hiện mã thô.
+    expect(screen.queryByText(/Sai lệch lịch sử:/)).not.toBeInTheDocument();
+    expect(screen.queryByText('fail')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Xem chi tiết/ }));
+    expect(onViewDetail).toHaveBeenCalledTimes(1);
+  });
+
+  it('render huy hiệu Cao khi không có fail/warn — hiện summary_vi', async () => {
+    mockedGetConfidence.mockResolvedValue({
+      ...CONFIDENCE_LOW,
+      level: 'high',
+      level_label_vi: 'Cao',
+      summary_vi: 'Hồ sơ đạt các kiểm tra độ tin cậy chính.',
+      signals: CONFIDENCE_LOW.signals.map((signal) => ({ ...signal, status: 'pass' as const })),
+    });
+    renderWithProviders(<ConfidenceCard bidId={1} enabled onViewDetail={() => undefined} />);
+
+    expect(await screen.findByText('Cao')).toBeInTheDocument();
+    expect(screen.getByText('Hồ sơ đạt các kiểm tra độ tin cậy chính.')).toBeInTheDocument();
+  });
+
+  it('render Trung bình khi có 1 warn duy nhất', async () => {
+    mockedGetConfidence.mockResolvedValue({
+      ...CONFIDENCE_LOW,
+      level: 'medium',
+      level_label_vi: 'Trung bình',
+      signals: CONFIDENCE_LOW.signals.map((signal) =>
+        signal.key === 'traceability' ? { ...signal, status: 'warn' as const } : { ...signal, status: 'pass' as const },
+      ),
+    });
+    renderWithProviders(<ConfidenceCard bidId={1} enabled onViewDetail={() => undefined} />);
+
+    expect(await screen.findByText('Trung bình')).toBeInTheDocument();
+    expect(screen.getByText(/Truy vết requirement:/)).toBeInTheDocument();
+  });
+});
+
+describe('Đợt 13 — C: Duyệt kỹ thuật (F.2)', () => {
+  beforeEach(() => {
+    mockedGetBid.mockReset();
+    mockedGetConfidence.mockReset();
+    mockedGetApprovals.mockReset();
+    mockedGetEffort.mockReset();
+    mockedGetEvaluations.mockReset();
+    mockedGetSchedule.mockReset();
+    mockedGetQuotation.mockReset();
+    mockedGetQuestions.mockReset();
+    mockedGetHistory.mockReset();
+    mockedGetBidQualification.mockReset();
+    mockedListProposalVersions.mockReset();
+  });
+
+  it('khóa nút Duyệt kỹ thuật khi mức Thấp và nhận xét < 10 ký tự; mở khóa khi đủ 10', async () => {
+    mockApprovalsPageQueries(BID_STATUS.technicalApproval);
+    renderApprovalsPage();
+
+    await screen.findByRole('button', { name: 'Duyệt kỹ thuật' });
+    // Chờ confidence tải xong (mức Thấp) trước khi kiểm tra trạng thái khóa.
+    expect(await screen.findByText(/Độ tin cậy ở mức Thấp — cần nhận xét tối thiểu 10 ký tự/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Duyệt kỹ thuật' })).toBeDisabled();
+    // Đủ 7 tín hiệu với nhãn tiếng Việt + lý do.
+    expect(screen.getByText('Kiểm tra WBS')).toBeInTheDocument();
+    expect(screen.getByText('Thiếu 1 kiểm tra WBS: leaf_within_limit')).toBeInTheDocument();
+    expect(screen.getByText('Truy vết requirement')).toBeInTheDocument();
+    expect(screen.getByText('34/36 requirement có task')).toBeInTheDocument();
+
+    const textarea = screen.getByLabelText('Nhận xét kỹ thuật');
+    fireEvent.change(textarea, { target: { value: 'abc' } });
+    expect(screen.getByRole('button', { name: 'Duyệt kỹ thuật' })).toBeDisabled();
+
+    fireEvent.change(textarea, { target: { value: 'abcdefghij' } });
+    expect(screen.getByRole('button', { name: 'Duyệt kỹ thuật' })).toBeEnabled();
+  });
+
+  it('hiện mức độ tin cậy đã lưu lúc duyệt từ bản ghi approvals (kèm phiên bản)', async () => {
+    mockApprovalsPageQueries(BID_STATUS.priceApproval);
+    mockedGetApprovals.mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          kind: 'tech',
+          status: 'approved',
+          approver: 'ai_developer',
+          reason: 'ok',
+          decided_at: '2026-10-13T10:00:00',
+          snapshot: {
+            confidence: { ...CONFIDENCE_LOW, level: 'medium', level_label_vi: 'Trung bình' },
+            case_studies_version: 2,
+            confidence_thresholds_version: 1,
+          },
+        },
+      ],
+    });
+    renderApprovalsPage();
+
+    expect(await screen.findByText(/Đã duyệt khi mức độ tin cậy: Trung bình/)).toBeInTheDocument();
+    expect(screen.getByText(/Case study v2/)).toBeInTheDocument();
+    expect(screen.getByText(/Ngưỡng v1/)).toBeInTheDocument();
+  });
+});
+
+describe('Đợt 13 — D: Cài đặt Case study (F.1)', () => {
+  beforeEach(() => {
+    mockedGetSettings.mockReset();
+    mockedImportCaseStudies.mockReset();
+  });
+
+  it('hiển thị lỗi theo từng dòng khi xem trước import case study', async () => {
+    mockedGetSettings.mockResolvedValue({
+      keys: [
+        { key: 'case_studies', source: 'repo', version: 1, yaml_preview: '', payload: [] },
+      ],
+    });
+    mockedImportCaseStudies.mockResolvedValue({
+      mode: 'preview',
+      total: 2,
+      valid_count: 1,
+      error_count: 1,
+      valid: [{ id: 'cs_a', title: 'Case A (giả lập)' }],
+      errors: ["Dòng 2: cột 'title': String should have at least 1 character"],
+    });
+    renderWithProviders(<SettingsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Case study/ }));
+    const file = new File(['x'], 'cases.csv', { type: 'text/csv' });
+    fireEvent.change(screen.getByLabelText('Chọn file case study'), { target: { files: [file] } });
+
+    expect(await screen.findByText(/Dòng 2:/)).toBeInTheDocument();
+    expect(screen.getByText(/1 dòng hợp lệ · 1 lỗi/)).toBeInTheDocument();
+    expect(screen.getByText('Case A (giả lập)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Lưu' })).toBeEnabled();
   });
 });

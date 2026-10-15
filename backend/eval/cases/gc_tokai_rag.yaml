@@ -1,0 +1,19 @@
+# DỮ LIỆU GIẢ LẬP — golden case Tokai Minato (tách từ docs/eval/golden_cases.yaml).
+# Hồ sơ chỉ yêu cầu báo giá PoC; chỉ chấm giai đoạn PoC, không chấm MVP/Production.
+
+id: gc_tokai_rag
+title: Trợ lý tri thức bảo trì — hồ sơ Tokai Minato (RAG, PoC trước)
+input:
+  sample_key: tokai_minato        # nối thư mục sample_data/rfp_tokai_minato vào sample_service
+answers:
+  default: RFPに記載のとおりです。PoCは豊橋工場のマシニングセンタ系設備に限定します。
+expected:
+  acceptable_directions: [rag]
+  phase_man_day:
+    poc: [60, 90]
+  poc_duration_weeks: [10, 13]
+  budget: {amount: 15000000, currency: JPY, scope: poc}
+  customer_milestones:
+    poc_start: 2026-12-01
+  question_topics_hint: [dữ liệu scan/OCR, bảo mật trên Azure của khách, ngôn ngữ Nhật–Việt]
+  max_question_rounds: 2
